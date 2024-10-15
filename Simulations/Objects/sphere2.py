@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 
 class Sphere(ABC):
     def __init__(self, position, velocity, radius, particle_type, mass):
-        self.position = np.array(position)
-        self.velocity = np.array(velocity)
+        self.position = np.array(position, dtype=np.float32)  
+        self.velocity = np.array(velocity, dtype=np.float32) 
         self.radius = radius
         self.particle_type = particle_type
         self.mass = mass
