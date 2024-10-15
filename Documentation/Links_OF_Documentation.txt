@@ -1,2 +1,3 @@
 Links of documentations:
 -- https://ieeexplore.ieee.org/abstract/document/8528699/authors#authors
+-- https://graphics.stanford.edu/courses/cs348c-16-fall/PA1_PBF2016/index.html
