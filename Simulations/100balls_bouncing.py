@@ -141,7 +141,7 @@ def main():
 
     spheres = [Sphere([random.uniform(-10, 10), random.uniform(5, 10), random.uniform(-10, 10)],
                       [random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)], 0.5)  # Smaller radius
-               for _ in range(1000)]
+               for _ in range(100)]
 
     clock = pygame.time.Clock()
 
