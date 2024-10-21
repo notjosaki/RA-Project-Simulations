@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import glm
-from Objects.sphere3 import Sphere, Proton, Neutron  # Asegúrate de que estas clases estén en tu carpeta Objects
+from Objects.sphere3 import Proton, Neutron  # Tu archivo de partículas
 
 # --- Shader programs ---
 vertex_shader = """
@@ -35,45 +35,6 @@ void main() {
     FragColor = texture(texture1, TexCoord);
 }
 """
-
-def create_checkerboard_texture():
-    width, height = 64, 64
-    checkerboard = np.zeros((width, height, 3), dtype=np.uint8)
-
-    for i in range(width):
-        for j in range(height):
-            if (i // 8 + j // 8) % 2 == 0:
-                checkerboard[i, j] = [255, 0, 0]  # Color rojo para el protón
-            else:
-                checkerboard[i, j] = [0, 0, 0]  
-
-    texture = glGenTextures(1)
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, checkerboard)
-    glGenerateMipmap(GL_TEXTURE_2D)
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-
-    return texture
-
-def create_white_texture():
-    width, height = 64, 64
-    white_texture = np.ones((width, height, 3), dtype=np.uint8) * 255  # Color blanco para el neutrón
-
-    texture = glGenTextures(1)
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, white_texture)
-    glGenerateMipmap(GL_TEXTURE_2D)
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-
-    return texture
 
 def create_sphere():
     latitudes = 30
@@ -119,10 +80,12 @@ def main():
     glEnable(GL_DEPTH_TEST)
     glClearColor(0.1, 0.1, 0.1, 1.0)
 
+    # Compilar shaders
     shader = compileProgram(compileShader(vertex_shader, GL_VERTEX_SHADER),
                             compileShader(fragment_shader, GL_FRAGMENT_SHADER))
     glUseProgram(shader)
 
+    # Crear geometría de la esfera
     vertices, tex_coords, indices = create_sphere()
 
     vao = glGenVertexArrays(1)
@@ -145,14 +108,11 @@ def main():
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * np.dtype(np.float32).itemsize, ctypes.c_void_p(vertices.nbytes))
     glEnableVertexAttribArray(1)
 
-    proton_texture = create_checkerboard_texture()  # Textura para el protón
-    neutron_texture = create_white_texture()  # Textura para el neutrón
-
-    # Posicionar el protón y el neutrón
+    # Crear las partículas (esferas)
     proton = Proton(position=[-2, 1, 0], velocity=[0.5, 0, 0])
     neutron = Neutron(position=[2, 1, 0], velocity=[-0.5, 0, 0])
 
-    # Matrices de la cámara
+    # Configurar la cámara
     view = glm.lookAt(glm.vec3(0, 5, 10), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
     projection = glm.perspective(glm.radians(45), 800 / 600, 0.1, 100)
 
@@ -180,14 +140,12 @@ def main():
         glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model_proton))
         glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm.value_ptr(projection))
-        glBindTexture(GL_TEXTURE_2D, proton_texture)
         glBindVertexArray(vao)
         glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
 
         # Dibujar el neutrón
         model_neutron = glm.translate(glm.mat4(1.0), glm.vec3(*neutron.position))
         glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model_neutron))
-        glBindTexture(GL_TEXTURE_2D, neutron_texture)
         glBindVertexArray(vao)
         glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
 
