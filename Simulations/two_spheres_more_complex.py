@@ -109,10 +109,13 @@ def main():
     glEnableVertexAttribArray(1)
 
     # Crear las partículas (esferas)
-    proton = Proton(position=[-2, 1, 0], velocity=[0.5, 0, 0])
-    neutron = Neutron(position=[2, 1, 0], velocity=[-0.5, 0, 0])
-    electron = Electron(position=[0, 0, 0], velocity=[0.1, 0.2, 0])
-    photon = Photon(position=[-1, 0, 0], velocity=[0.3, 0, 0])
+    proton = Proton(position=[-2, 1, 0], velocity=[0.0, 0.0, 0.0])
+    neutron = Neutron(position=[2, 1, 0], velocity=[0.0, 0.0, 0.0])
+    electron = Electron(position=[0, 0, 0], velocity=[0.0, 0.0, 0.0])
+
+    # Campos eléctricos y magnéticos
+    electric_field = np.array([0.0, 0.0, 0.0])  # Cambia esto para simular un campo eléctrico
+    magnetic_field = np.array([0.0, 0.0, 1.0])  # Campo magnético en dirección Z
 
     # Configurar la cámara
     view = glm.lookAt(glm.vec3(0, 5, 10), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
@@ -129,18 +132,29 @@ def main():
             if event.type == QUIT:
                 running = False
 
-        # Actualizar posiciones de las partículas
-        proton.update(dt)
-        neutron.update(dt)
-        electron.update(dt)
-        photon.update(dt)
+        # Aplicar fuerzas a las partículas
+        for particle in [proton, neutron, electron]:
+            if isinstance(particle, Proton):
+                force = electric_field * particle.charge
+                particle.apply_force(force, dt)
+            elif isinstance(particle, Electron):
+                force = electric_field * particle.charge
+                particle.apply_force(force, dt)
+
+            # Aplicar el efecto del campo magnético (Lorentz Force)
+            if isinstance(particle, Proton) or isinstance(particle, Electron):
+                lorentz_force = np.cross(particle.velocity, magnetic_field) * particle.charge
+                particle.apply_force(lorentz_force, dt)
+
+            # Actualizar la posición
+            particle.update(dt)
 
         # Comprobar colisiones
         if proton.check_swept_collision(neutron):
             proton.resolve_collision(neutron)
 
         # Dibujar las partículas
-        for particle in [proton, neutron, electron, photon]:
+        for particle in [proton, neutron, electron]:
             model = glm.translate(glm.mat4(1.0), glm.vec3(*particle.position))
             glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model))
             glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm.value_ptr(view))

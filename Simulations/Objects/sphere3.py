@@ -2,13 +2,14 @@ import numpy as np
 import glm
 
 class Sphere:
-    def __init__(self, position, velocity, radius, particle_type='default', mass=1.0):
+    def __init__(self, position, velocity, radius, particle_type='default', mass=1.0, charge=0.0):
         self.position = np.array(position, dtype=np.float64)
         self.previous_position = np.copy(self.position)
         self.velocity = np.array(velocity, dtype=np.float64)
         self.radius = radius
         self.particle_type = particle_type
         self.mass = mass
+        self.charge = charge  # Carga de la partícula
         self.energy = 0  # Energía de la partícula
 
     def apply_force(self, force, dt):
@@ -71,7 +72,7 @@ class Sphere:
 
 class Electron(Sphere):
     def __init__(self, position, velocity):
-        super().__init__(position, velocity, radius=0.1, particle_type='electron', mass=9.11e-31)
+        super().__init__(position, velocity, radius=0.1, particle_type='electron', mass=9.11e-31, charge=-1.6e-19)
 
     def handle_particle_interaction(self, other):
         if other.particle_type == 'proton':
@@ -86,14 +87,14 @@ class Electron(Sphere):
         distance_vector = glm.dvec3(*other.position) - glm.dvec3(*self.position)
         distance = glm.length(distance_vector)
         if distance > 0:
-            force_magnitude = k * (self.mass * other.mass) / (distance ** 2)
+            force_magnitude = k * (self.charge * other.charge) / (distance ** 2)
             force_direction = glm.normalize(distance_vector)
-            return force_direction * force_magnitude * (-1 if self.particle_type != other.particle_type else 1)  # Atrae o repele
+            return force_direction * force_magnitude  # Atrae o repele dependiendo de las cargas
         return glm.dvec3(0.0)
 
 class Proton(Sphere):
     def __init__(self, position, velocity):
-        super().__init__(position, velocity, radius=0.2, particle_type='proton', mass=1.67e-27)
+        super().__init__(position, velocity, radius=0.2, particle_type='proton', mass=1.67e-27, charge=1.6e-19)
 
     def handle_particle_interaction(self, other):
         if other.particle_type == 'electron':
@@ -103,7 +104,7 @@ class Proton(Sphere):
 
 class Neutron(Sphere):
     def __init__(self, position, velocity):
-        super().__init__(position, velocity, radius=0.2, particle_type='neutron', mass=1.67e-27)
+        super().__init__(position, velocity, radius=0.2, particle_type='neutron', mass=1.67e-27, charge=0)
 
     def handle_particle_interaction(self, other):
         if other.particle_type in ['proton', 'electron']:
@@ -113,7 +114,7 @@ class Neutron(Sphere):
 
 class Photon(Sphere):
     def __init__(self, position, velocity):
-        super().__init__(position, velocity, radius=0.05, particle_type='photon', mass=0)
+        super().__init__(position, velocity, radius=0.05, particle_type='photon', mass=0, charge=0)
 
     def apply_force(self, force, dt):
         pass
@@ -129,7 +130,7 @@ class Photon(Sphere):
 
 class HiggsBoson(Sphere):
     def __init__(self, position, velocity):
-        super().__init__(position, velocity, radius=0.3, particle_type='Higgs Boson', mass=2.2e-25)
+        super().__init__(position, velocity, radius=0.3, particle_type='Higgs Boson', mass=2.2e-25, charge=0)
 
     def handle_particle_interaction(self, other):
         if other.particle_type in ['electron', 'proton']:
