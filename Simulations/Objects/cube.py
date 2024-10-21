@@ -1,12 +1,5 @@
 import numpy as np
 import glm
-
-import numpy as np
-import glm
-
-import numpy as np
-import glm
-
 class Cube:
     def __init__(self, position, velocity, size, mass=1.0):
         self.position = np.array(position)
