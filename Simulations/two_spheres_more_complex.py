@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import glm
-from Objects.sphere3 import Proton, Neutron  # Tu archivo de partículas
+from Objects.sphere3 import Proton, Neutron, Electron, Photon  # Asegúrate de incluir todas las partículas
 
 # --- Shader programs ---
 vertex_shader = """
@@ -111,6 +111,8 @@ def main():
     # Crear las partículas (esferas)
     proton = Proton(position=[-2, 1, 0], velocity=[0.5, 0, 0])
     neutron = Neutron(position=[2, 1, 0], velocity=[-0.5, 0, 0])
+    electron = Electron(position=[0, 0, 0], velocity=[0.1, 0.2, 0])
+    photon = Photon(position=[-1, 0, 0], velocity=[0.3, 0, 0])
 
     # Configurar la cámara
     view = glm.lookAt(glm.vec3(0, 5, 10), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
@@ -130,24 +132,21 @@ def main():
         # Actualizar posiciones de las partículas
         proton.update(dt)
         neutron.update(dt)
+        electron.update(dt)
+        photon.update(dt)
 
         # Comprobar colisiones
-        if proton.check_collision(neutron):
+        if proton.check_swept_collision(neutron):
             proton.resolve_collision(neutron)
 
-        # Dibujar el protón
-        model_proton = glm.translate(glm.mat4(1.0), glm.vec3(*proton.position))
-        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model_proton))
-        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm.value_ptr(view))
-        glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm.value_ptr(projection))
-        glBindVertexArray(vao)
-        glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
-
-        # Dibujar el neutrón
-        model_neutron = glm.translate(glm.mat4(1.0), glm.vec3(*neutron.position))
-        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model_neutron))
-        glBindVertexArray(vao)
-        glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
+        # Dibujar las partículas
+        for particle in [proton, neutron, electron, photon]:
+            model = glm.translate(glm.mat4(1.0), glm.vec3(*particle.position))
+            glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model))
+            glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm.value_ptr(view))
+            glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm.value_ptr(projection))
+            glBindVertexArray(vao)
+            glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
 
         pygame.display.flip()
 
