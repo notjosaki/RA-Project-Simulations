@@ -6,11 +6,8 @@ This module contents finite element classes definitions to create finite element
 class bar_1D:
 
 	"""
-	Represent an 1D finite element with 2 nodes
-
 	Attributes
 	----------
-
 	id : int
 		Element identification
 
