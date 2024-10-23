@@ -7,9 +7,9 @@ This module defines classes representing a finite element mesh
 
 """
 
-from modules import element
-from modules import node
-from modules import particle
+import element
+import node
+import particle
 
 class mesh_1D: 
     """

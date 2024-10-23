@@ -6,8 +6,8 @@
 This module defines functions for updating tasks
 
 """
-from modules import interpolation as interp
-from modules import shape as shape
+import interpolation as interp
+import shape as shape
 
 def particle_velocity(msh,dt):
     """

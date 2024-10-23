@@ -17,9 +17,9 @@ $$\ddot{u}_i$$: is the acceleration
 """
 
 # local modules
-from modules import interpolation as interpola # for interpolation tasks
-from modules import integration as integra # for integration tasks
-from modules import update # for updating tasks
+import interpolation as interpola # for interpolation tasks
+import integration as integra # for integration tasks
+import update2 # for updating tasks
 
 def explicit_solution(msh,msetup):
 	"""
