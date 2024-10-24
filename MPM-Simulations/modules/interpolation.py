@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 r"""
 
 This module defines interpolation functions to transfer quantities from particles to nodes
