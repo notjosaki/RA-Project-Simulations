@@ -1,6 +1,6 @@
 import numpy as np
-import glm
 from OpenGL.GL import *
+from OpenGL.GLU import *  # Importa GLU para usar gluLookAt
 import pygame
 from pygame.locals import *
 import time
@@ -15,8 +15,34 @@ class Box:
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.center)
-        glutWireCube(self.size * 2)  # Puede cambiarse a una función de dibujo personalizada sin GLUT
+        self.draw_box()
         glPopMatrix()
+
+    def draw_box(self):
+        """Dibuja un cubo alámbrico."""
+        half_size = self.size
+        vertices = [
+            (-half_size, -half_size, -half_size),
+            ( half_size, -half_size, -half_size),
+            ( half_size,  half_size, -half_size),
+            (-half_size,  half_size, -half_size),
+            (-half_size, -half_size,  half_size),
+            ( half_size, -half_size,  half_size),
+            ( half_size,  half_size,  half_size),
+            (-half_size,  half_size,  half_size),
+        ]
+        
+        edges = [
+            (0, 1), (1, 2), (2, 3), (3, 0),  # cara inferior
+            (4, 5), (5, 6), (6, 7), (7, 4),  # cara superior
+            (0, 4), (1, 5), (2, 6), (3, 7)   # conexiones verticales
+        ]
+
+        glBegin(GL_LINES)
+        for edge in edges:
+            for vertex in edge:
+                glVertex3fv(vertices[vertex])
+        glEnd()
 
     def collide(self, sphere):
         """Detecta colisiones con las paredes de la caja y ajusta la velocidad de la esfera."""
@@ -24,7 +50,7 @@ class Box:
             if abs(sphere.position[i] - self.center[i]) + sphere.radius >= self.size:
                 sphere.velocity[i] = -sphere.velocity[i] * self.energy_loss  # Rebote con pérdida de energía
 
-# Clase Sphere (reutilizando tu implementación)
+# Clase Sphere
 class Sphere:
     def __init__(self, position, velocity, radius, mass=1.0):
         self.position = np.array(position, dtype=np.float64)
@@ -39,7 +65,6 @@ class Sphere:
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)
-        # Dibujo de una esfera en lugar de glutWireSphere
         self.draw_sphere()
         glPopMatrix()
 
@@ -112,5 +137,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
