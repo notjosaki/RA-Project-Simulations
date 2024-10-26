@@ -2,19 +2,23 @@ import numpy as np
 import glm
 
 class Sphere:
-    def __init__(self, position, velocity, radius, particle_type='default', mass=1.0, charge=0.0):
+    def __init__(self, position, velocity, radius, particle_type='default', mass=1.0, charge=0.0, energy=0):
         self.position = np.array(position, dtype=np.float64)
         self.previous_position = np.copy(self.position)
         self.velocity = np.array(velocity, dtype=np.float64)
         self.radius = radius
         self.particle_type = particle_type
         self.mass = mass
-        self.charge = charge  # Carga de la partícula
-        self.energy = 0  # Energía de la partícula
+        self.charge = charge  
+        self.energy = energy  
+        self.momentum = self.mass * self.velocity  # Inicializa el momentum
 
     def apply_force(self, force, dt):
+        # Calcular la aceleración
         acceleration = force / self.mass
+        # Actualiza la velocidad y el momentum
         self.velocity += acceleration * dt
+        self.momentum = self.mass * self.velocity  # Actualiza el momentum
 
     def update(self, dt, gravity=9.81):
         self.previous_position = np.copy(self.position)
@@ -25,6 +29,7 @@ class Sphere:
         if self.position[1] - self.radius < 0:
             self.position[1] = self.radius
             self.velocity[1] = -self.velocity[1] * 0.9  # Rebote
+            self.momentum = self.mass * self.velocity  # Actualiza el momentum tras el rebote
 
     def check_swept_collision(self, other):
         displacement_self = glm.dvec3(*self.position) - glm.dvec3(*self.previous_position)
@@ -53,6 +58,9 @@ class Sphere:
             impulse = collision_normal * impulse_magnitude
             self.velocity += impulse / self.mass
             other.velocity -= impulse / other.mass
+            # Actualiza el momentum después de la colisión
+            self.momentum = self.mass * self.velocity
+            other.momentum = other.mass * other.velocity
 
     def handle_particle_interaction(self, other):
         pass
@@ -69,6 +77,7 @@ class Sphere:
             force_direction = glm.normalize(distance_vector)
             return force_direction * force_magnitude
         return glm.dvec3(0.0)
+
 
 class Electron(Sphere):
     def __init__(self, position, velocity):

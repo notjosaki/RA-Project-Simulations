@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import glm
-from Objects.sphere3 import Sphere
+from Simulations.Objects.Particles import Sphere
 from Objects.wall import Wall
 from Objects.cube import Cube
 from PIL import Image
