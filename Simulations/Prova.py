@@ -1,139 +1,97 @@
-import numpy as np
-from OpenGL.GL import *
-from OpenGL.GLU import *  # Importa GLU para usar gluLookAt
 import pygame
 from pygame.locals import *
-import time
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import numpy as np
+import glm
 
-# Definición de la clase Box para los rebotes con pérdida de energía
-class Box:
-    def __init__(self, center, size, energy_loss=0.9):
-        self.center = np.array(center, dtype=np.float64)
-        self.size = size  # tamaño del cubo
-        self.energy_loss = energy_loss  # pérdida de energía en cada rebote
-
-    def draw(self):
-        glPushMatrix()
-        glTranslatef(*self.center)
-        self.draw_box()
-        glPopMatrix()
-
-    def draw_box(self):
-        """Dibuja un cubo alámbrico."""
-        half_size = self.size
-        vertices = [
-            (-half_size, -half_size, -half_size),
-            ( half_size, -half_size, -half_size),
-            ( half_size,  half_size, -half_size),
-            (-half_size,  half_size, -half_size),
-            (-half_size, -half_size,  half_size),
-            ( half_size, -half_size,  half_size),
-            ( half_size,  half_size,  half_size),
-            (-half_size,  half_size,  half_size),
-        ]
-        
-        edges = [
-            (0, 1), (1, 2), (2, 3), (3, 0),  # cara inferior
-            (4, 5), (5, 6), (6, 7), (7, 4),  # cara superior
-            (0, 4), (1, 5), (2, 6), (3, 7)   # conexiones verticales
-        ]
-
-        glBegin(GL_LINES)
-        for edge in edges:
-            for vertex in edge:
-                glVertex3fv(vertices[vertex])
-        glEnd()
-
-    def collide(self, sphere):
-        """Detecta colisiones con las paredes de la caja y ajusta la velocidad de la esfera."""
-        for i in range(3):  # Comprueba cada eje (x, y, z)
-            if abs(sphere.position[i] - self.center[i]) + sphere.radius >= self.size:
-                sphere.velocity[i] = -sphere.velocity[i] * self.energy_loss  # Rebote con pérdida de energía
-
-# Clase Sphere
-class Sphere:
-    def __init__(self, position, velocity, radius, mass=1.0):
-        self.position = np.array(position, dtype=np.float64)
-        self.velocity = np.array(velocity, dtype=np.float64)
+# Define los planetas
+class Planet:
+    def __init__(self, position, velocity, radius, texture):
+        self.position = np.array(position, dtype=np.float32)
+        self.velocity = np.array(velocity, dtype=np.float32)
         self.radius = radius
-        self.mass = mass
-
-    def update(self, dt):
-        """Actualiza la posición de la esfera."""
-        self.position += self.velocity * dt
+        self.texture = texture
+        self.rotation_angle = 0
 
     def draw(self):
+        glBindTexture(GL_TEXTURE_2D, self.texture)
         glPushMatrix()
         glTranslatef(*self.position)
-        self.draw_sphere()
+        glRotatef(self.rotation_angle, 0, 1, 0)
+        gluSphere(gluNewQuadric(), self.radius, 32, 32)
         glPopMatrix()
+        self.rotation_angle += 1  # Rotate for better visualization
 
-    def draw_sphere(self):
-        """Dibuja una esfera usando glBegin y glEnd."""
-        slices = 16
-        stacks = 16
-        for i in range(slices):
-            lat0 = np.pi * (-0.5 + float(i) / slices)  # latitud
-            z0 = np.sin(lat0)  # z
-            zr0 = np.cos(lat0)  # radio en z
+    def update(self):
+        self.position += self.velocity
 
-            lat1 = np.pi * (-0.5 + float(i + 1) / slices)  # latitud
-            z1 = np.sin(lat1)  # z
-            zr1 = np.cos(lat1)  # radio en z
 
-            glBegin(GL_QUAD_STRIP)
-            for j in range(stacks + 1):
-                lng = 2 * np.pi * float(j) / stacks  # longitud
-                x = np.cos(lng)  # x
-                y = np.sin(lng)  # y
+def load_texture(image_path):
+    texture_surface = pygame.image.load(image_path)
+    texture_data = pygame.image.tostring(texture_surface, "RGBA", 1)
+    width, height = texture_surface.get_size()
 
-                glNormal3f(x * zr0, y * zr0, z0)
-                glVertex3f(x * zr0 * self.radius, y * zr0 * self.radius, z0 * self.radius)
-                glNormal3f(x * zr1, y * zr1, z1)
-                glVertex3f(x * zr1 * self.radius, y * zr1 * self.radius, z1 * self.radius)
-            glEnd()
+    texture_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    
+    return texture_id
 
-# Función principal para simular el rebote
+
+def draw_background():
+    glBegin(GL_QUADS)
+    glColor3f(0, 0, 0)  # Space color
+    glVertex3f(-1000, -1000, -1000)
+    glVertex3f(1000, -1000, -1000)
+    glVertex3f(1000, 1000, -1000)
+    glVertex3f(-1000, 1000, -1000)
+    glEnd()
+
+
 def main():
-    # Inicialización de Pygame
     pygame.init()
-    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('Rebote en caja')
+    display = (800, 600)
+    pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
+    gluPerspective(45, (display[0] / display[1]), 0.1, 1000)
+    glTranslatef(0.0, 0.0, -10)
+    glEnable(GL_TEXTURE_2D)
 
-    glEnable(GL_DEPTH_TEST)
+    # Cargar texturas de planetas
+    earth_texture = load_texture('earth_texture.jpg')  # Asegúrate de tener una textura de la Tierra
+    mars_texture = load_texture('mars_texture.jpg')    # Asegúrate de tener una textura de Marte
 
-    # Crear objetos
-    box = Box(center=(0, 0, 0), size=10, energy_loss=0.8)
-    sphere = Sphere(position=(1, 2, 3), velocity=(1, -1.5, 1.2), radius=0.5)
+    # Crear planetas
+    earth = Planet(position=[2, 0, 0], velocity=[0, 0, 0], radius=1, texture=earth_texture)
+    mars = Planet(position=[-2, 0, 0], velocity=[0.01, 0, 0], radius=0.5, texture=mars_texture)
 
-    gluLookAt(20, 20, 20, 0, 0, 0, 0, 1, 0)
-
-    # Bucle principal
-    last_time = time.time()
-    running = True
-    while running:
+    while True:
         for event in pygame.event.get():
-            if event.type == QUIT:
-                running = False
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        draw_background()
 
-        # Actualiza la esfera y verifica colisiones
-        current_time = time.time()
-        dt = current_time - last_time
-        sphere.update(dt)
-        box.collide(sphere)  # Comprobar colisiones y aplicar rebote
-        last_time = current_time
+        # Actualizar y dibujar planetas
+        earth.update()
+        mars.update()
+        earth.draw()
+        mars.draw()
 
-        # Dibujar la caja y la esfera
-        box.draw()
-        sphere.draw()
+        # Colisión simplificada (puedes hacerla más compleja)
+        if np.linalg.norm(earth.position - mars.position) < (earth.radius + mars.radius):
+            print("Colisión detectada!")
+            # Aquí puedes añadir una explosión o cualquier efecto deseado
 
-        # Actualizar la pantalla
         pygame.display.flip()
-        pygame.time.wait(16)  # Espera para limitar el frame rate
+        pygame.time.wait(10)
 
-    pygame.quit()
 
 if __name__ == "__main__":
     main()

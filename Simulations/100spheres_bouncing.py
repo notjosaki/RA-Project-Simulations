@@ -7,7 +7,7 @@ from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import glm
 import random
-from Objects.sphere import Sphere  # Import the Sphere class
+from Objects.sphere2 import Sphere  # Import the Sphere class
 
 # --- Shader programs ---
 vertex_shader = """
