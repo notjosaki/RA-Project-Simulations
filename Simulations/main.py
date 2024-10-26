@@ -69,10 +69,10 @@ def crear_boton(text, script_name):
 btn_100spheres = crear_boton("Game Simulation", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/cube_box.py")
 btn_100spheres.pack(pady=5)
 
-btn_acelerador = crear_boton("Colisión de Dos Esferas", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_spheres_colisioning.py")
+btn_acelerador = crear_boton("Colisión de Dos Esferas", "Simulations/two_spheres_colisioning.py")
 btn_acelerador.pack(pady=5)
 
-btn_dos_cubos = crear_boton("Colisión de Dos Cubos", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_cubes_colisioning.py")
+btn_dos_cubos = crear_boton("Colisión de Dos Cubos", "Simulations/two_cubes_colisioning.py")
 btn_dos_cubos.pack(pady=5)
 
 # Botón de salida con efecto hover
