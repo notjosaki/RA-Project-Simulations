@@ -102,5 +102,3 @@ class Planet(Sphere):
             'atmosphere': self.atmosphere
         }
 
-# Ejemplo de creación de un planeta
-earth = Planet(position=[0, 10, 0], velocity=[0, 0, 0], radius=1, mass=5.972e24, name='Earth', atmosphere='Nitrogen-Oxygen')

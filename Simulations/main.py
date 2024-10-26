@@ -2,80 +2,75 @@ import tkinter as tk
 import subprocess
 from tkinter import messagebox
 
-# Función para ejecutar el script de OpenGL
+# Funció per executar el script de OpenGL
 def ejecutar_visualizacion(script_name):
     try:
         subprocess.run(["python", script_name], check=True)
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"No se ha podido ejecutar el script {script_name}.\nError: {e}")
+        messagebox.showerror("Error", f"No s'ha pogut executar el script {script_name}.\nError: {e}")
     except Exception as e:
-        messagebox.showerror("Error", f"Error inesperado: {e}")
+        messagebox.showerror("Error", f"Error inesperat: {e}")
 
-# Función para crear un fondo degradado
-def crear_fondo_degradado(canvas, color1, color2):
+# Funció per crear un fons degradat
+def crear_fondo_degradat(canvas, color1, color2):
     width = canvas.winfo_width()
     height = canvas.winfo_height()
     for i in range(height):
+        # Calcula el color intermedi
         r = int(color1[0] + (color2[0] - color1[0]) * i / height)
         g = int(color1[1] + (color2[1] - color1[1]) * i / height)
         b = int(color1[2] + (color2[2] - color1[2]) * i / height)
         color = f'#{r:02x}{g:02x}{b:02x}'
         canvas.create_line(0, i, width, i, fill=color)
 
-# Crear ventana principal
+# Crear finestra principal
 ventana = tk.Tk()
-ventana.title("Aplicación para la visualización de fenómenos físicos")
+ventana.title("Aplicació per a la visualització de fenòmens físics")
 ventana.geometry("600x500")
 
-# Crear un canvas para el fondo degradado
+# Crear un canvas per al fons degradat
 canvas = tk.Canvas(ventana, width=600, height=500)
 canvas.pack(fill="both", expand=True)
 
-# Función para actualizar el fondo cuando la ventana se redimensiona
-def actualizar_fondo(event):
-    canvas.delete("all")
-    crear_fondo_degradado(canvas, color_inici, color_fi)
+# Colors per al degradat
+color_inici = (135, 206, 235)  # Cel blau clar
+color_fi = (240, 255, 255)     # Blanc
 
-# Asignar la función de actualización al cambio de tamaño de ventana
-ventana.bind("<Configure>", actualizar_fondo)
+# Crear el fons degradat
+crear_fondo_degradat(canvas, color_inici, color_fi)
 
-# Colores para el degradado
-color_inici = (135, 206, 250)  # Azul cielo
-color_fi = (70, 130, 180)      # Azul acero
+# Etiqueta de benvinguda
+etiqueta_benvinguda = tk.Label(ventana, text="Visualitzacions de fenòmens físics", font=("Arial", 16), bg="#87CEEB")
+etiqueta_benvinguda.pack(pady=20)
 
-# Crear el fondo degradado
-crear_fondo_degradado(canvas, color_inici, color_fi)
+# Marc per a agrupar els botons
+marco_botones = tk.Frame(ventana, bg="#87CEEB")
+marco_botones.pack(pady=10)
 
-# Etiqueta de bienvenida
-etiqueta_benvinguda = tk.Label(canvas, text="Visualizaciones de fenómenos físicos", font=("Arial", 18, "bold"), fg="white", bg="#4682B4", pady=10, padx=20)
-etiqueta_benvinguda.place(relx=0.5, rely=0.1, anchor="center")
-
-# Marco para agrupar los botones y que también se redimensione
-marco_botones = tk.Frame(canvas, bg="#4682B4", bd=10, relief="ridge")
-marco_botones.place(relx=0.5, rely=0.5, anchor="center")  # Cambiado al centro para ser responsivo
-
-# Función para crear botones personalizados
+# Funció per crear botons
 def crear_boton(text, script_name):
-    return tk.Button(marco_botones, text=text, width=30, height=2, font=("Arial", 12), bg="#87CEEB", fg="black",
-                     activebackground="#4682B4", activeforeground="white", relief="flat",
+    return tk.Button(marco_botones, text=text, width=30, bg="#ADD8E6", 
                      command=lambda: ejecutar_visualizacion(script_name))
 
+<<<<<<< HEAD
 # Crear los botones
 btn_100spheres = crear_boton("Game Simulation", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/cube_box.py")
+=======
+# Crear els botons
+btn_100spheres = crear_boton("100 Esferes Rebotant", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/100spheres_bouncing.py")
+>>>>>>> 9887c31780afd134a321e60efed183ab97644e19
 btn_100spheres.pack(pady=5)
 
-btn_acelerador = crear_boton("Colisión de Dos Esferas", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_spheres_colisioning.py")
+btn_acelerador = crear_boton("Col·lisió de Dues Esferes", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_spheres_colisioning.py")
 btn_acelerador.pack(pady=5)
 
-btn_dos_cubos = crear_boton("Colisión de Dos Cubos", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_cubes_colisioning.py")
+btn_dos_cubos = crear_boton("Col·lisió de Dues Cubs", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_cubes_colisioning.py")
 btn_dos_cubos.pack(pady=5)
 
-btn_salir = tk.Button(marco_botones, text="Salir", width=30, height=2, font=("Arial", 12), bg="#FF6347", fg="white",
-                      activebackground="#CD5C5C", activeforeground="black", relief="flat",
-                      command=ventana.quit)
+btn_salir = tk.Button(ventana, text="Sortir", width=30, bg="#ADD8E6", command=ventana.quit)
 btn_salir.pack(pady=20)
 
-# Ejecutar la ventana principal
+# Executar la finestra principal
 ventana.mainloop()
 
 
