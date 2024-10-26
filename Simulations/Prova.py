@@ -1,103 +1,116 @@
-# import numpy as np
-# import glm
-# from OpenGL.GL import *
-# from OpenGL.GLUT import *
-# import time
+import numpy as np
+import glm
+from OpenGL.GL import *
+import pygame
+from pygame.locals import *
+import time
 
-# # Definición de la clase Box para los rebotes con pérdida de energía
-# class Box:
-#     def __init__(self, center, size, energy_loss=0.9):
-#         self.center = np.array(center, dtype=np.float64)
-#         self.size = size  # tamaño del cubo
-#         self.energy_loss = energy_loss  # pérdida de energía en cada rebote
+# Definición de la clase Box para los rebotes con pérdida de energía
+class Box:
+    def __init__(self, center, size, energy_loss=0.9):
+        self.center = np.array(center, dtype=np.float64)
+        self.size = size  # tamaño del cubo
+        self.energy_loss = energy_loss  # pérdida de energía en cada rebote
 
-#     def draw(self):
-#         glPushMatrix()
-#         glTranslatef(*self.center)
-#         glutWireCube(self.size * 2)
-#         glPopMatrix()
+    def draw(self):
+        glPushMatrix()
+        glTranslatef(*self.center)
+        glutWireCube(self.size * 2)  # Puede cambiarse a una función de dibujo personalizada sin GLUT
+        glPopMatrix()
 
-#     def collide(self, sphere):
-#         """Detecta colisiones con las paredes de la caja y ajusta la velocidad de la esfera."""
-#         for i in range(3):  # Comprueba cada eje (x, y, z)
-#             if abs(sphere.position[i] - self.center[i]) + sphere.radius >= self.size:
-#                 sphere.velocity[i] = -sphere.velocity[i] * self.energy_loss  # Rebote con pérdida de energía
+    def collide(self, sphere):
+        """Detecta colisiones con las paredes de la caja y ajusta la velocidad de la esfera."""
+        for i in range(3):  # Comprueba cada eje (x, y, z)
+            if abs(sphere.position[i] - self.center[i]) + sphere.radius >= self.size:
+                sphere.velocity[i] = -sphere.velocity[i] * self.energy_loss  # Rebote con pérdida de energía
 
-# # Clase Sphere (reutilizando tu implementación)
-# class Sphere:
-#     def __init__(self, position, velocity, radius, mass=1.0):
-#         self.position = np.array(position, dtype=np.float64)
-#         self.velocity = np.array(velocity, dtype=np.float64)
-#         self.radius = radius
-#         self.mass = mass
+# Clase Sphere (reutilizando tu implementación)
+class Sphere:
+    def __init__(self, position, velocity, radius, mass=1.0):
+        self.position = np.array(position, dtype=np.float64)
+        self.velocity = np.array(velocity, dtype=np.float64)
+        self.radius = radius
+        self.mass = mass
 
-#     def update(self, dt):
-#         """Actualiza la posición de la esfera."""
-#         self.position += self.velocity * dt
+    def update(self, dt):
+        """Actualiza la posición de la esfera."""
+        self.position += self.velocity * dt
 
-#     def draw(self):
-#         glPushMatrix()
-#         glTranslatef(*self.position)
-#         glutWireSphere(self.radius, 16, 16)
-#         glPopMatrix()
+    def draw(self):
+        glPushMatrix()
+        glTranslatef(*self.position)
+        # Dibujo de una esfera en lugar de glutWireSphere
+        self.draw_sphere()
+        glPopMatrix()
 
-# # Función principal para simular el rebote
-# def main():
-#     # Inicialización de OpenGL
-#     glutInit()
-#     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-#     glutInitWindowSize(800, 600)
-#     glutCreateWindow(b'Rebote en caja')
+    def draw_sphere(self):
+        """Dibuja una esfera usando glBegin y glEnd."""
+        slices = 16
+        stacks = 16
+        for i in range(slices):
+            lat0 = np.pi * (-0.5 + float(i) / slices)  # latitud
+            z0 = np.sin(lat0)  # z
+            zr0 = np.cos(lat0)  # radio en z
 
-#     glEnable(GL_DEPTH_TEST)
+            lat1 = np.pi * (-0.5 + float(i + 1) / slices)  # latitud
+            z1 = np.sin(lat1)  # z
+            zr1 = np.cos(lat1)  # radio en z
 
-#     # Crear objetos
-#     box = Box(center=(0, 0, 0), size=10, energy_loss=0.8)
-#     sphere = Sphere(position=(1, 2, 3), velocity=(1, -1.5, 1.2), radius=0.5)
+            glBegin(GL_QUAD_STRIP)
+            for j in range(stacks + 1):
+                lng = 2 * np.pi * float(j) / stacks  # longitud
+                x = np.cos(lng)  # x
+                y = np.sin(lng)  # y
 
-#     def display():
-#         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-#         glLoadIdentity()
-#         gluLookAt(20, 20, 20, 0, 0, 0, 0, 1, 0)
+                glNormal3f(x * zr0, y * zr0, z0)
+                glVertex3f(x * zr0 * self.radius, y * zr0 * self.radius, z0 * self.radius)
+                glNormal3f(x * zr1, y * zr1, z1)
+                glVertex3f(x * zr1 * self.radius, y * zr1 * self.radius, z1 * self.radius)
+            glEnd()
 
-#         # Dibujar la caja y la esfera
-#         box.draw()
-#         sphere.draw()
+# Función principal para simular el rebote
+def main():
+    # Inicialización de Pygame
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption('Rebote en caja')
 
-#         # Actualizar la pantalla
-#         glutSwapBuffers()
+    glEnable(GL_DEPTH_TEST)
 
-#     def update(dt):
-#         sphere.update(dt)
-#         box.collide(sphere)  # Comprobar colisiones y aplicar rebote
+    # Crear objetos
+    box = Box(center=(0, 0, 0), size=10, energy_loss=0.8)
+    sphere = Sphere(position=(1, 2, 3), velocity=(1, -1.5, 1.2), radius=0.5)
 
-#         # Redibujar la escena
-#         glutPostRedisplay()
+    gluLookAt(20, 20, 20, 0, 0, 0, 0, 1, 0)
 
-#     # Bucle de animación
-#     last_time = time.time()
-#     def animate():
-#         nonlocal last_time
-#         current_time = time.time()
-#         dt = current_time - last_time
-#         update(dt)
-#         last_time = current_time
-#         glutTimerFunc(16, lambda _: animate(), 0)
+    # Bucle principal
+    last_time = time.time()
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
 
-#     # Asignar funciones de dibujo y animación
-#     glutDisplayFunc(display)
-#     animate()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-#     glutMainLoop()
+        # Actualiza la esfera y verifica colisiones
+        current_time = time.time()
+        dt = current_time - last_time
+        sphere.update(dt)
+        box.collide(sphere)  # Comprobar colisiones y aplicar rebote
+        last_time = current_time
 
-# if __name__ == "__main__":
-#     main()
+        # Dibujar la caja y la esfera
+        box.draw()
+        sphere.draw()
 
-from OpenGL.GLUT import glutInit
+        # Actualizar la pantalla
+        pygame.display.flip()
+        pygame.time.wait(16)  # Espera para limitar el frame rate
 
-try:
-    glutInit()  # Esto debería funcionar sin error
-    print("GLUT inicializado correctamente.")
-except Exception as e:
-    print(f"Error al inicializar GLUT: {e}")
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
+
 
