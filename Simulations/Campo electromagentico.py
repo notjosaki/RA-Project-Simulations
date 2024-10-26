@@ -5,7 +5,7 @@ import pyrr
 from pyrr import Matrix44
 import pygame
 from pygame.locals import *
-from Objects.sphere3 import Photon,Electron,Proton
+from Simulations.Objects.Particles import Photon,Electron,Proton
 
 # Inicializar pygame y la ventana de OpenGL
 pygame.init()
