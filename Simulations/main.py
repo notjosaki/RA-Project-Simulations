@@ -61,7 +61,7 @@ def crear_boton(text, script_name):
                      command=lambda: ejecutar_visualizacion(script_name))
 
 # Crear los botones
-btn_100spheres = crear_boton("100 Esferas Rebotando", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/100spheres_bouncing.py")
+btn_100spheres = crear_boton("Game Simulation", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/cube_box.py")
 btn_100spheres.pack(pady=5)
 
 btn_acelerador = crear_boton("Colisión de Dos Esferas", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_spheres_colisioning.py")
