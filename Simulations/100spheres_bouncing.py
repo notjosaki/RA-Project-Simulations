@@ -1,175 +1,87 @@
-# main.py
+import tkinter as tk
+import subprocess
+from tkinter import messagebox
 
-import pygame
-from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GL.shaders import compileProgram, compileShader
-import numpy as np
-import glm
-import random
-from Objects.sphere import Sphere  # Import the Sphere class
+# Función para ejecutar el script de OpenGL
+def ejecutar_visualizacion(script_name):
+    try:
+        subprocess.run(["python", script_name], check=True)
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"No se ha podido ejecutar el script {script_name}.\nError: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error inesperado: {e}")
 
-# --- Shader programs ---
-vertex_shader = """
-#version 330 core
-layout(location = 0) in vec3 aPos;
-layout(location = 1) in vec2 aTexCoord;
+# Función para crear un fondo degradado
+def crear_fondo_degradado(canvas, color1, color2):
+    width = canvas.winfo_width()
+    height = canvas.winfo_height()
+    for i in range(height):
+        r = int(color1[0] + (color2[0] - color1[0]) * i / height)
+        g = int(color1[1] + (color2[1] - color1[1]) * i / height)
+        b = int(color1[2] + (color2[2] - color1[2]) * i / height)
+        color = f'#{r:02x}{g:02x}{b:02x}'
+        canvas.create_line(0, i, width, i, fill=color)
 
-out vec2 TexCoord;
+# Crear ventana principal
+ventana = tk.Tk()
+ventana.title("Aplicación para la visualización de fenómenos físicos")
+ventana.geometry("600x500")
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+# Crear un canvas para el fondo degradado
+canvas = tk.Canvas(ventana, width=600, height=500)
+canvas.pack(fill="both", expand=True)
 
-void main() {
-    TexCoord = aTexCoord;
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-}
-"""
+# Función para actualizar el fondo cuando la ventana se redimensiona
+def actualizar_fondo(event):
+    canvas.delete("all")
+    crear_fondo_degradado(canvas, color_inici, color_fi)
 
-fragment_shader = """
-#version 330 core
-in vec2 TexCoord;
-out vec4 FragColor;
+# Asignar la función de actualización al cambio de tamaño de ventana
+ventana.bind("<Configure>", actualizar_fondo)
 
-uniform sampler2D texture1;
+# Colores para el degradado
+color_inici = (135, 206, 250)  # Azul cielo
+color_fi = (70, 130, 180)      # Azul acero
 
-void main() {
-    FragColor = texture(texture1, TexCoord);
-}
-"""
+# Crear el fondo degradado
+crear_fondo_degradado(canvas, color_inici, color_fi)
 
-def create_checkerboard_texture():
-    width, height = 64, 64
-    checkerboard = np.zeros((width, height, 3), dtype=np.uint8)
+# Etiqueta de bienvenida
+etiqueta_benvinguda = tk.Label(canvas, text="Visualizaciones de fenómenos físicos", font=("Arial", 18, "bold"), fg="white", bg="#4682B4", pady=10, padx=20)
+etiqueta_benvinguda.place(relx=0.5, rely=0.1, anchor="center")
 
-    for i in range(width):
-        for j in range(height):
-            if (i // 8 + j // 8) % 2 == 0:
-                checkerboard[i, j] = [255, 255, 255]  
-            else:
-                checkerboard[i, j] = [0, 0, 0]  
+# Marco para agrupar los botones y que también se redimensione
+marco_botones = tk.Frame(canvas, bg="#4682B4", bd=10, relief="ridge")
+marco_botones.place(relx=0.5, rely=0.5, anchor="center")
 
-    texture = glGenTextures(1)
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, checkerboard)
-    glGenerateMipmap(GL_TEXTURE_2D)
+# Función para crear botones personalizados con efecto hover
+def crear_boton(text, script_name):
+    boton = tk.Button(marco_botones, text=text, width=30, height=2, font=("Arial", 12), bg="#87CEEB", fg="black",
+                      activebackground="#4682B4", activeforeground="white", relief="flat",
+                      command=lambda: ejecutar_visualizacion(script_name))
+    
+    # Efecto de hover: Cambia el color de fondo cuando el ratón entra y sale
+    boton.bind("<Enter>", lambda e: boton.config(bg="#5F9EA0", fg="white"))
+    boton.bind("<Leave>", lambda e: boton.config(bg="#87CEEB", fg="black"))
+    return boton
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+# Crear los botones
+btn_100spheres = crear_boton("100 Esferas Rebotando", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/100spheres_bouncing.py")
+btn_100spheres.pack(pady=5)
 
-    return texture
+btn_acelerador = crear_boton("Colisión de Dos Esferas", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_spheres_colisioning.py")
+btn_acelerador.pack(pady=5)
 
-def create_sphere():
-    latitudes = 30
-    longitudes = 30
-    radius = 1.0
-    vertices = []
-    tex_coords = []
-    indices = []
+btn_dos_cubos = crear_boton("Colisión de Dos Cubos", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/two_cubes_colisioning.py")
+btn_dos_cubos.pack(pady=5)
 
-    for i in range(latitudes + 1):
-        theta = i * np.pi / latitudes
-        sin_theta = np.sin(theta)
-        cos_theta = np.cos(theta)
+# Botón de salida con efecto hover
+btn_salir = tk.Button(marco_botones, text="Salir", width=30, height=2, font=("Arial", 12), bg="#FF6347", fg="white",
+                      activebackground="#CD5C5C", activeforeground="black", relief="flat",
+                      command=ventana.quit)
+btn_salir.pack(pady=20)
+btn_salir.bind("<Enter>", lambda e: btn_salir.config(bg="#CD5C5C"))
+btn_salir.bind("<Leave>", lambda e: btn_salir.config(bg="#FF6347"))
 
-        for j in range(longitudes + 1):
-            phi = j * 2 * np.pi / longitudes
-            sin_phi = np.sin(phi)
-            cos_phi = np.cos(phi)
-
-            x = cos_phi * sin_theta
-            y = cos_theta
-            z = sin_phi * sin_theta
-            u = 1 - (j / longitudes)
-            v = 1 - (i / latitudes)
-
-            vertices.extend([x * radius, y * radius, z * radius])
-            tex_coords.extend([u, v])
-
-    for i in range(latitudes):
-        for j in range(longitudes):
-            first = i * (longitudes + 1) + j
-            second = first + longitudes + 1
-            indices.extend([first, second, first + 1])
-            indices.extend([second, second + 1, first + 1])
-
-    return np.array(vertices, dtype=np.float32), np.array(tex_coords, dtype=np.float32), np.array(indices, dtype=np.uint32)
-
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('OpenGL Physics Simulation')
-
-    glEnable(GL_DEPTH_TEST)
-    glClearColor(0.1, 0.1, 0.1, 1.0)
-
-    shader = compileProgram(compileShader(vertex_shader, GL_VERTEX_SHADER),
-                            compileShader(fragment_shader, GL_FRAGMENT_SHADER))
-    glUseProgram(shader)
-
-    vertices, tex_coords, indices = create_sphere()
-
-    vao = glGenVertexArrays(1)
-    vbo = glGenBuffers(1)
-    ebo = glGenBuffers(1)
-
-    glBindVertexArray(vao)
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo)
-    glBufferData(GL_ARRAY_BUFFER, vertices.nbytes + tex_coords.nbytes, None, GL_STATIC_DRAW)
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.nbytes, vertices)
-    glBufferSubData(GL_ARRAY_BUFFER, vertices.nbytes, tex_coords.nbytes, tex_coords)
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * np.dtype(np.float32).itemsize, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(0)
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * np.dtype(np.float32).itemsize, ctypes.c_void_p(vertices.nbytes))
-    glEnableVertexAttribArray(1)
-
-    texture = create_checkerboard_texture()
-    glUniform1i(glGetUniformLocation(shader, "texture1"), 0)
-
-    # Move camera further away to see spheres better
-    view = glm.lookAt(glm.vec3(0, 10, 20), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
-    projection = glm.perspective(glm.radians(45), 800 / 600, 0.1, 100)
-
-    spheres = [Sphere([random.uniform(-10, 10), random.uniform(5, 10), random.uniform(-10, 10)],
-                      [random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)], 0.5)  # Smaller radius
-               for _ in range(100)]
-
-    clock = pygame.time.Clock()
-
-    running = True
-    while running:
-        dt = clock.tick(60) / 1000.0
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                running = False
-
-        for i, sphere in enumerate(spheres):
-            sphere.update(dt)
-
-            model = glm.translate(glm.mat4(1.0), glm.vec3(*sphere.position))
-            glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm.value_ptr(model))
-            glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm.value_ptr(view))
-            glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm.value_ptr(projection))
-
-            glBindVertexArray(vao)
-            glActiveTexture(GL_TEXTURE0)
-            glBindTexture(GL_TEXTURE_2D, texture)
-            glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
-
-        pygame.display.flip()
-
-    pygame.quit()
-
-if __name__ == "__main__":
-    main()
+# Ejecutar la ventana principal
+ventana.mainloop()
