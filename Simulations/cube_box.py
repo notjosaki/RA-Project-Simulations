@@ -117,8 +117,8 @@ def main():
     glEnable(GL_DEPTH_TEST)
 
     # Cargar texturas
-    texture_red = load_texture('C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/Imatges/textura-roja.png')
-    texture_blue = load_texture('C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/Imatges/textura-azul.png')
+    texture_red = load_texture('Simulations/Imatges/textura-roja.png')
+    texture_blue = load_texture('Simulations/Imatges/textura-azul.png')
 
     spheres = []
     particles = []  # Lista para almacenar partículas
