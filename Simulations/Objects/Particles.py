@@ -1,7 +1,7 @@
 import numpy as np
 import glm
 
-class Sphere:
+class Particle:
     def __init__(self, position, velocity, radius, particle_type='default', mass=1.0, charge=0.0, energy=0):
         self.position = np.array(position, dtype=np.float64)
         self.previous_position = np.copy(self.position)
@@ -79,7 +79,7 @@ class Sphere:
         return glm.dvec3(0.0)
 
 
-class Electron(Sphere):
+class Electron(Particle):
     def __init__(self, position, velocity):
         super().__init__(position, velocity, radius=0.1, particle_type='electron', mass=9.11e-31, charge=-1.6e-19)
 
@@ -101,7 +101,7 @@ class Electron(Sphere):
             return force_direction * force_magnitude  # Atrae o repele dependiendo de las cargas
         return glm.dvec3(0.0)
 
-class Proton(Sphere):
+class Proton(Particle):
     def __init__(self, position, velocity):
         super().__init__(position, velocity, radius=0.2, particle_type='proton', mass=1.67e-27, charge=1.6e-19)
 
@@ -111,7 +111,7 @@ class Proton(Sphere):
             self.energy -= energy_transfer
             other.energy += energy_transfer
 
-class Neutron(Sphere):
+class Neutron(Particle):
     def __init__(self, position, velocity):
         super().__init__(position, velocity, radius=0.2, particle_type='neutron', mass=1.67e-27, charge=0)
 
@@ -121,7 +121,7 @@ class Neutron(Sphere):
             self.energy -= energy_transfer
             other.energy += energy_transfer
 
-class Photon(Sphere):
+class Photon(Particle):
     def __init__(self, position, velocity):
         super().__init__(position, velocity, radius=0.05, particle_type='photon', mass=0, charge=0)
 
@@ -137,7 +137,7 @@ class Photon(Sphere):
             other.energy += energy_transfer
             self.velocity = np.zeros(3)
 
-class HiggsBoson(Sphere):
+class HiggsBoson(Particle):
     def __init__(self, position, velocity):
         super().__init__(position, velocity, radius=0.3, particle_type='Higgs Boson', mass=2.2e-25, charge=0)
 
