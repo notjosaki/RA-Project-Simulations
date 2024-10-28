@@ -2,7 +2,7 @@ import glm
 import moderngl
 import numpy as np
 
-class LDR:
+class LHC:
     def __init__(self, context, length=10.0, radius=1.0, position=(0, 0, 0)):
         """
         Inicialitza l'accelerador de partícules representat com un tub.
