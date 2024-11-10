@@ -66,6 +66,11 @@ def crear_boton(text, script_name):
     return boton
 
 # Crear los botones
+
+btn_100spheres = crear_boton("LHC", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/lhc_box.py")
+btn_100spheres.pack(pady=5)
+
+
 btn_100spheres = crear_boton("Game Simulation", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/cube_box.py")
 btn_100spheres.pack(pady=5)
 
