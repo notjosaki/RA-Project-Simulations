@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import glm
-from Simulations.Objects.Particles import Sphere
+from Objects.Particles import Sphere
 from Objects.wall import Wall
 from Objects.cube import Cube
 from PIL import Image
@@ -190,7 +190,7 @@ def main_sphere():
 
             # Colisiones entre esferas
             for other in spheres:
-                if sphere != other and sphere.check_collision(other):
+                if sphere != other and sphere.check_swept_collision(other):
                     sphere.resolve_collision(other)
 
             # Colisiones con muros

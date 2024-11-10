@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import random
-
+from OpenGL.GLU import *
 # Definir los vértices y las aristas del cubo
 vertices = [
     [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
