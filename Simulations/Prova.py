@@ -1,206 +1,164 @@
 import pygame
 from pygame.locals import *
-import glm
-import moderngl
-from Objects.LHC import LHC
-
-# Configuración de Pygame y moderngl
 from OpenGL.GL import *
-from OpenGL.GLU import *
+from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
-import random
+import glm
 
-# Definir la clase Particle
-class Particle:
-    def __init__(self, position, velocity, radius=0.02, color=(0.2, 0.8, 0.2), texture=None):
-        self.position = np.array(position, dtype=np.float32)
-        self.velocity = np.array(velocity, dtype=np.float32)
+# Configura shaders para el toroide
+vertex_shader = """
+#version 330
+layout(location = 0) in vec3 in_position;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+void main() {
+    gl_Position = projection * view * model * vec4(in_position, 1.0);
+}
+"""
+
+fragment_shader = """
+#version 330
+out vec4 fragColor;
+void main() {
+    fragColor = vec4(1.0, 1.0, 1.0, 1.0);  // Color blanco
+}
+"""
+
+class Toroide:
+    def __init__(self, context, radius=1.0, tube_radius=0.2, segments=50, rings=50, position=(0, 0, -5)):
+        self.ctx = context
         self.radius = radius
-        self.color = color  # Color de la partícula (verde o azul)
-        self.texture = texture  # Textura de la partícula
+        self.tube_radius = tube_radius
+        self.segments = segments
+        self.rings = rings
+        self.position = glm.vec3(position)
+        self.rotation_speed = 1.0  # Velocidad de rotación en grados
+        self.rotation_enabled = False  # Bandera para activar/desactivar la rotación
 
-# Variable para controlar si se oculta la mitad del toroide
-hide_half_torus = False
+        # Compilación de shaders
+        self.shader = compileProgram(
+            compileShader(vertex_shader, GL_VERTEX_SHADER),
+            compileShader(fragment_shader, GL_FRAGMENT_SHADER)
+        )
+        glUseProgram(self.shader)
 
-def load_texture(path):
-    """Carga una textura desde un archivo y la prepara para OpenGL."""
-    texture_surface = pygame.image.load(path)
-    texture_data = pygame.image.tostring(texture_surface, "RGBA", True)
-    width, height = texture_surface.get_size()
+        # Creación de la malla del toroide
+        self.vertices, self.indices = self.create_torus_mesh()
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
 
-    texture_id = glGenTextures(1)
-    glBindTexture(GL_TEXTURE_2D, texture_id)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        # Buffer de vértices
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
+        glEnableVertexAttribArray(0)
 
-    return texture_id
+        # Buffer de índices
+        self.ebo = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.ebo)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
 
-def draw_textured_sphere(radius=0.02, slices=10, stacks=10, texture=None):
-    """Dibuja una esfera con textura."""
-    if texture:
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, texture)
-    else:
-        glDisable(GL_TEXTURE_2D)
+        # Matrices de transformación
+        self.model_matrix = glm.mat4(1)
+        self.model_matrix = glm.rotate(self.model_matrix, glm.radians(90.0), glm.vec3(0, 1, 0))  # Orientación en el eje X
+        self.view_matrix = glm.translate(glm.mat4(1), self.position)
+        self.projection_matrix = glm.perspective(glm.radians(45.0), 800/600, 0.1, 100.0)
 
-    quadric = gluNewQuadric()
-    gluQuadricTexture(quadric, GL_TRUE)
-    gluSphere(quadric, radius, slices, stacks)
+        # Ubicación de matrices en el shader
+        self.model_loc = glGetUniformLocation(self.shader, "model")
+        self.view_loc = glGetUniformLocation(self.shader, "view")
+        self.projection_loc = glGetUniformLocation(self.shader, "projection")
 
-    if texture:
-        glDisable(GL_TEXTURE_2D)
+        glUniformMatrix4fv(self.view_loc, 1, GL_FALSE, glm.value_ptr(self.view_matrix))
+        glUniformMatrix4fv(self.projection_loc, 1, GL_FALSE, glm.value_ptr(self.projection_matrix))
 
-def setup_view(x_offset, y_offset, angle_x, angle_y, zoom):
-    """Configura cada perspectiva de la cámara."""
-    glViewport(x_offset, y_offset, 400, 400)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(45, 1, 0.1, 50.0)
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-    gluLookAt(zoom, zoom, zoom, 0, 0, 0, 0, 1, 0)
-    glRotatef(angle_x, 1, 0, 0)
-    glRotatef(angle_y, 0, 1, 0)
+    def create_torus_mesh(self):
+        vertices = []
+        indices = []
 
-def reflect_velocity(position, velocity, R=0.8, r=0.3):
-    """Refleja la velocidad de la partícula al colisionar con las paredes del toroide."""
-    x, y, z = position
-    distance = np.sqrt(x**2 + y**2)
-    F = (distance - R)**2 + z**2 - r**2
-    if F > 0:
-        dF_dx = 2 * (distance - R) * (x / distance)
-        dF_dy = 2 * (distance - R) * (y / distance)
-        dF_dz = 2 * z
-        normal = np.array([dF_dx, dF_dy, dF_dz])
-        normal = normal / np.linalg.norm(normal)
-        velocity_reflected = velocity - 2 * np.dot(velocity, normal) * normal
-        return velocity_reflected
-    return velocity
+        for i in range(self.segments):
+            theta = 2 * np.pi * i / self.segments
+            cos_theta = np.cos(theta)
+            sin_theta = np.sin(theta)
+
+            for j in range(self.rings):
+                phi = 2 * np.pi * j / self.rings
+                cos_phi = np.cos(phi)
+                sin_phi = np.sin(phi)
+
+                x = (self.radius + self.tube_radius * cos_phi) * cos_theta
+                y = (self.radius + self.tube_radius * cos_phi) * sin_theta
+                z = self.tube_radius * sin_phi
+                vertices.extend([x, y, z])
+
+                next_i = (i + 1) % self.segments
+                next_j = (j + 1) % self.rings
+                indices.extend([i * self.rings + j, i * self.rings + next_j])
+                indices.extend([i * self.rings + j, next_i * self.rings + j])
+
+        vertices = np.array(vertices, dtype=np.float32)
+        indices = np.array(indices, dtype=np.uint32)
+        return vertices, indices
+
+    def update(self):
+        # Solo rota el modelo si la bandera de rotación está habilitada
+        if self.rotation_enabled:
+            self.model_matrix = glm.rotate(self.model_matrix, glm.radians(self.rotation_speed), glm.vec3(1, 0, 0))
+
+    def draw(self):
+        # Enviar matrices de transformación al shader
+        glUniformMatrix4fv(self.model_loc, 1, GL_FALSE, glm.value_ptr(self.model_matrix))
+        
+        # Renderizado en modo líneas
+        glBindVertexArray(self.vao)
+        glDrawElements(GL_LINES, len(self.indices), GL_UNSIGNED_INT, None)
+
+    def toggle_rotation(self):
+        self.rotation_enabled = not self.rotation_enabled  # Alterna el estado de rotación
+
+    def cleanup(self):
+        glDeleteVertexArrays(1, [self.vao])
+        glDeleteBuffers(1, [self.vbo, self.ebo])
+        glDeleteProgram(self.shader)
 
 def main():
-    global hide_half_torus  # Declaramos la variable como global para modificarla dentro de main
+    # Inicialización de pygame y OpenGL
     pygame.init()
-    pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
-    ctx = moderngl.create_context()
-
-    # Configuración de la cámara
-    fov = 45
-    aspect_ratio = 800 / 600
-    projection = glm.perspective(glm.radians(fov), aspect_ratio, 0.1, 100.0)
-    camera_pos = glm.vec3(0.0, 0.0, 15.0)
-    view = glm.lookAt(camera_pos, glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
-
-    # Creación del objeto LHC
-    lhc = LHC(ctx)
-
+    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption("Toroide en malla de alambre")
     clock = pygame.time.Clock()
+
+    # Configuración de OpenGL
+    glEnable(GL_DEPTH_TEST)
+    glClearColor(0.0, 0.0, 0.0, 1.0)  # Fondo negro
+
+    # Crear instancia de la clase Toroide
+    toroide = Toroide(context=None, radius=1.0, tube_radius=0.3, segments=60, rings=60, position=(0, 0, -5))
+
     running = True
     while running:
-    screen = pygame.display.set_mode((800, 800), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('3D Textured Particles in Torus')
-
-    glClearColor(0.1, 0.1, 0.1, 1.0)
-    glEnable(GL_DEPTH_TEST)
-    glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-    clock = pygame.time.Clock()
-    zoom = 3.0
-
-    particles = []
-    max_particles = 100
-    torus_inner_radius = 0.3
-    torus_outer_radius = 0.8
-    R = torus_outer_radius
-    r = torus_inner_radius
-    slowdown_factor = 0.5  # Factor de ralentización de velocidad
-
-    # Cargar texturas
-    texture_red = load_texture('C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/Imatges/textura-roja.png')
-    texture_blue = load_texture('C:/Users/figue/Documents/UAB/UAB/Setè Quatri/Projecte RA/RA-Project-Simulations/Simulations/Imatges/textura-azul.png')
-
-    while True:
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
+            elif event.type == KEYDOWN:
+                if event.key == K_g:
+                    toroide.toggle_rotation()  # Alterna rotación al presionar 'G'
 
-        # Limpiar el contexto con color negro
-        ctx.clear(0.0, 0.0, 0.0)
-        
-        # Dibujar el objeto LHC
-        lhc.draw(projection, view)
-        
-        # Actualizar la pantalla
-                pygame.quit()
-                return
-            if event.type == MOUSEBUTTONDOWN:
-                if event.button == 4:
-                    zoom -= 0.1
-                elif event.button == 5:
-                    zoom += 0.1
-            if event.type == KEYDOWN:
-                if event.key == K_i:
-                    if len(particles) < max_particles:
-                        theta = random.uniform(0, 2 * np.pi)
-                        phi = random.uniform(0, 2 * np.pi)
-                        local_r = random.uniform(-r + 0.02, r - 0.02)
-                        x = (R + local_r * np.cos(phi)) * np.cos(theta)
-                        y = (R + local_r * np.cos(phi)) * np.sin(theta)
-                        z = local_r * np.sin(phi)
-                        position = [x, y, z]
-                        tangent_theta = np.array([-np.sin(theta), np.cos(theta), 0])
-                        tangent_phi = np.array([-np.cos(theta) * np.cos(phi), -np.sin(theta) * np.cos(phi), np.sin(phi)])
-                        velocity = tangent_theta * random.uniform(0.01, 0.03) + tangent_phi * random.uniform(0.01, 0.03)
-                        # Partícula verde con textura roja
-                        particles.append(Particle(position, velocity, texture=texture_red))
-                elif event.key == K_h:
-                    hide_half_torus = not hide_half_torus
-                elif event.key == K_o:
-                    if len(particles) < max_particles:
-                        theta = random.uniform(0, 2 * np.pi)
-                        phi = random.uniform(0, 2 * np.pi)
-                        local_r = random.uniform(-r + 0.02, r - 0.02)
-                        x = (R + local_r * np.cos(phi)) * np.cos(theta)
-                        y = (R + local_r * np.cos(phi)) * np.sin(theta)
-                        z = local_r * np.sin(phi)
-                        position = [x, y, z]
-                        tangent_theta = np.array([-np.sin(theta), np.cos(theta), 0])
-                        tangent_phi = np.array([-np.cos(theta) * np.cos(phi), -np.sin(theta) * np.cos(phi), np.sin(phi)])
-                        velocity = tangent_theta * random.uniform(0.01, 0.03) + tangent_phi * random.uniform(0.01, 0.03)
-                        # Partícula azul con textura azul
-                        particles.append(Particle(position, velocity, color=(0.2, 0.2, 1.0), texture=texture_blue))
-                elif event.key == K_k:
-                    for particle in particles:
-                        particle.velocity *= slowdown_factor
-
-        for particle in particles:
-            particle.position += particle.velocity
-            particle.velocity = reflect_velocity(particle.position, particle.velocity, R, r)
-
+        # Limpiar pantalla
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        for x_offset, y_offset, angle_x, angle_y in [
-            (0, 400, 0, 0),
-            (400, 400, 0, 90),
-            (0, 0, 90, 0),
-            (400, 0, 30, 45)
-        ]:
-            setup_view(x_offset, y_offset, angle_x, angle_y, zoom)
-            draw_wireframe_torus(inner_radius=torus_inner_radius, outer_radius=torus_outer_radius)
-            for particle in particles:
-                glPushMatrix()
-                glTranslatef(*particle.position)
-                draw_textured_sphere(radius=particle.radius, texture=particle.texture)
-                glPopMatrix()
+        # Actualizar y dibujar el toroide
+        toroide.update()
+        toroide.draw()
 
         pygame.display.flip()
         clock.tick(60)
 
+    # Limpieza
+    toroide.cleanup()
     pygame.quit()
-        clock.tick(60)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-

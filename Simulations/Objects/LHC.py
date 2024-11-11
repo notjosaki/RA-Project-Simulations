@@ -3,10 +3,10 @@ import moderngl
 import numpy as np
 
 class LHC:
-    def __init__(self, context, length=20.0, radius=1.0, position=(0, 0, 0)):
+    def __init__(self, context, radius=1.0, tube_radius=0.2, position=(0, 0, 0)):
         self.ctx = context
-        self.length = length
         self.radius = radius
+        self.tube_radius = tube_radius
         self.position = glm.vec3(position)
 
         # Configura blending para transparencia
@@ -28,35 +28,41 @@ class LHC:
             #version 330
             out vec4 fragColor;
             void main() {
-                fragColor = vec4(0.3, 0.7, 0.9, 0.3);  // Azul con 30% de opacidad
+                fragColor = vec4(1.0, 1.0, 1.0, 1.0);  // Blanco para el efecto de líneas
             }
             """
         )
 
-        # Crea el mesh del cilindro
-        self.vertex_array = self.create_cylinder_mesh()
+        # Crea el mesh del toroide
+        self.vertex_array = self.create_torus_mesh()
 
-    def create_cylinder_mesh(self, segments=50):
+    def create_torus_mesh(self, segments=50, rings=50):
         vertices = []
         indices = []
-        
+
         for i in range(segments):
-            angle = 2 * np.pi * i / segments
-            x = np.cos(angle) * self.radius
-            y = np.sin(angle) * self.radius
-            vertices.append((x, y, -self.length / 2))
-            vertices.append((x, y, self.length / 2))
-            
-            if i < segments - 1:
-                indices.extend([2 * i, 2 * i + 1, 2 * i + 2])
-                indices.extend([2 * i + 1, 2 * i + 3, 2 * i + 2])
-            else:
-                indices.extend([2 * i, 2 * i + 1, 0])
-                indices.extend([2 * i + 1, 1, 0])
+            theta = 2 * np.pi * i / segments
+            cos_theta = np.cos(theta)
+            sin_theta = np.sin(theta)
+
+            for j in range(rings):
+                phi = 2 * np.pi * j / rings
+                cos_phi = np.cos(phi)
+                sin_phi = np.sin(phi)
+
+                x = (self.radius + self.tube_radius * cos_phi) * cos_theta
+                y = (self.radius + self.tube_radius * cos_phi) * sin_theta
+                z = self.tube_radius * sin_phi
+                vertices.append((x, y, z))
+
+                next_i = (i + 1) % segments
+                next_j = (j + 1) % rings
+                indices.extend([i * rings + j, i * rings + next_j])
+                indices.extend([i * rings + j, next_i * rings + j])
 
         vertices = np.array(vertices, dtype='f4')
         indices = np.array(indices, dtype='i4')
-        
+
         vbo = self.ctx.buffer(vertices)
         ibo = self.ctx.buffer(indices)
         vao = self.ctx.vertex_array(self.program, [(vbo, '3f', 'in_position')], ibo)
@@ -64,10 +70,8 @@ class LHC:
 
     def draw(self, projection_matrix, view_matrix):
         model_matrix = glm.translate(glm.mat4(1), self.position)
-        model_matrix = glm.scale(model_matrix, glm.vec3(10.0, 1.0, 1.0))  # Escala para alargar el cilindro
-
         self.program['model'].write(model_matrix)
         self.program['projection'].write(projection_matrix)
         self.program['view'].write(view_matrix)
 
-        self.vertex_array.render(moderngl.TRIANGLES)
+        self.vertex_array.render(moderngl.LINES)
