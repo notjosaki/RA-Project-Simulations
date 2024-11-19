@@ -3,23 +3,33 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
-import math
 
 
-class Planeta:
+class Astro:
     def __init__(self, massa, position=(0, 0, 0), radius=0.3):
-        self.massa = massa
-        self.position = np.array(position)
-        self.radius = radius
+        self.massa = massa  # En kilogramos (kg)
+        self.position = np.array(position)  # Centro del astro
+        self.radius = radius  # Radio visible del objeto
 
     def draw(self):
-        """Dibujar el planeta como una esfera."""
+        """Dibujar el astro como una esfera."""
         glColor3f(1.0, 1.0, 0.0)  # Color amarillo para la esfera
         quadric = gluNewQuadric()
         glPushMatrix()
         glTranslatef(*self.position)
         gluSphere(quadric, self.radius, 32, 32)
         glPopMatrix()
+
+    def calculate_gravitational_influence(self, point, c=3e8):
+        """Calcular la curvatura espacial en un punto dado."""
+        G = 6.674e-11  # Constante gravitacional
+        r = np.linalg.norm(np.array(point) - self.position)  # Distancia al centro del astro
+
+        if r > self.radius:
+            schwarzschild_radius = 2 * G * self.massa / c**2
+            curvature_factor = schwarzschild_radius / r if r > 0 else 0
+            return curvature_factor
+        return 0  # Dentro del radio, la deformación será insignificante
 
 
 def generate_points_inside_cube(spacing=0.4):
@@ -32,18 +42,20 @@ def generate_points_inside_cube(spacing=0.4):
     return points
 
 
-def deform_point_towards_planet(point, planeta, influence_factor=1.0):
-    """Deformar un punto hacia el planeta según su masa y la distancia."""
-    direction = planeta.position - np.array(point)
+def deform_point_towards_astro(point, astro, influence_factor=1.0):
+    """Deformar un punto hacia un astro según su curvatura."""
+    direction = astro.position - np.array(point)
     distance = np.linalg.norm(direction)
-    if distance > 0:  # Evitar división por cero
-        deformation = (planeta.massa / (distance**2)) * influence_factor
+    curvature = astro.calculate_gravitational_influence(point)
+
+    if distance > 0:
+        deformation = curvature * influence_factor
         return np.array(point) + deformation * direction / distance
     return point
 
 
-def draw_curved_lines(points, planeta, max_distance=0.5, influence_factor=0.2):
-    """Dibujar líneas deformadas hacia el planeta."""
+def draw_curved_lines(points, astro, max_distance=0.5, influence_factor=0.2):
+    """Dibujar líneas deformadas hacia un astro."""
     glBegin(GL_LINES)
     for i, p1 in enumerate(points):
         for j, p2 in enumerate(points):
@@ -52,16 +64,16 @@ def draw_curved_lines(points, planeta, max_distance=0.5, influence_factor=0.2):
                 if distance <= max_distance:
                     # Calcular el punto intermedio deformado
                     mid_point = (np.array(p1) + np.array(p2)) / 2
-                    deformed_mid_point = deform_point_towards_planet(mid_point, planeta, influence_factor)
+                    deformed_mid_point = deform_point_towards_astro(mid_point, astro, influence_factor)
 
-                    # Calcular la distancia promedio de los puntos al planeta
-                    dist_to_planet_p1 = np.linalg.norm(np.array(p1) - planeta.position)
-                    dist_to_planet_p2 = np.linalg.norm(np.array(p2) - planeta.position)
-                    avg_distance_to_planet = (dist_to_planet_p1 + dist_to_planet_p2) / 2
+                    # Calcular la distancia promedio de los puntos al astro
+                    dist_to_astro_p1 = np.linalg.norm(np.array(p1) - astro.position)
+                    dist_to_astro_p2 = np.linalg.norm(np.array(p2) - astro.position)
+                    avg_distance_to_astro = (dist_to_astro_p1 + dist_to_astro_p2) / 2
 
                     # Normalizar el color basado en la distancia
                     max_influence = 2.0
-                    influence = max(0, 1 - avg_distance_to_planet / max_influence)
+                    influence = max(0, 1 - avg_distance_to_astro / max_influence)
                     glColor3f(1.0 * influence, 0.5 * influence, 1.0 - influence)
 
                     # Dibujar líneas curvadas con el punto deformado
@@ -88,7 +100,7 @@ def setup_view(x_offset, y_offset, angle_x, angle_y, zoom):
 def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 800), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('Cubo 3D con Deformación Espacio-Tiempo')
+    pygame.display.set_caption('Deformación del Espacio-Tiempo')
 
     glClearColor(0.1, 0.1, 0.1, 1.0)
     glEnable(GL_DEPTH_TEST)
@@ -96,8 +108,8 @@ def main():
     clock = pygame.time.Clock()
     zoom = 3.0  # Posición inicial de zoom
 
-    # Crear un planeta con una masa específica
-    planeta = Planeta(massa=1.0)  # Masa entre 0 y 10
+    # Crear un astro (por ejemplo, masa solar)
+    astro = Astro(massa=1.989e30, radius=0.3)  # Masa del Sol
 
     # Generar puntos internos del cubo
     points = generate_points_inside_cube(spacing=0.4)
@@ -120,8 +132,8 @@ def main():
         # Dibujar vistas
         for x_offset, y_offset, angle_x, angle_y in [(0, 400, 0, 0), (400, 400, 0, 90), (0, 0, 90, 0), (400, 0, 30, 45)]:
             setup_view(x_offset, y_offset, angle_x, angle_y, zoom)
-            planeta.draw()  # Dibujar el planeta
-            draw_curved_lines(points, planeta, max_distance=0.5, influence_factor=0.2)
+            astro.draw()  # Dibujar el astro
+            draw_curved_lines(points, astro, max_distance=0.5, influence_factor=0.2)
 
         pygame.display.flip()
         pygame.time.wait(10)
