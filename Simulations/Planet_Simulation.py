@@ -8,7 +8,7 @@ import numpy as np
 class Astro:
     def __init__(self, massa, position=(0, 0, 0), radius=0.3):
         self.massa = massa  # En kilogramos (kg)
-        self.position = np.array(position)  # Centro del astro
+        self.position = np.array(position, dtype=float)  # Centro del astro
         self.radius = radius  # Radio visible del objeto
 
     def draw(self):
@@ -99,7 +99,7 @@ def setup_view(x_offset, y_offset, angle_x, angle_y, zoom):
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((800, 800), DOUBLEBUF | OPENGL)
+    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
     pygame.display.set_caption('Deformación del Espacio-Tiempo')
 
     glClearColor(0.1, 0.1, 0.1, 1.0)
@@ -114,6 +114,9 @@ def main():
     # Generar puntos internos del cubo
     points = generate_points_inside_cube(spacing=0.4)
 
+    # Velocidad del movimiento
+    move_speed = 0.1
+
     while True:
         delta_time = clock.tick(60) / 1000.0
 
@@ -127,13 +130,24 @@ def main():
                 elif event.button == 5:  # Rueda hacia abajo
                     zoom += 0.1  # Alejar (zoom out)
 
+        # Controlar el movimiento del astro con las teclas
+        keys = pygame.key.get_pressed()
+        if keys[K_UP]:
+            astro.position[1] = min(1.0, astro.position[1] + move_speed)
+        if keys[K_DOWN]:
+            astro.position[1] = max(-1.0, astro.position[1] - move_speed)
+        if keys[K_LEFT]:
+            astro.position[0] = max(-1.0, astro.position[0] - move_speed)
+        if keys[K_RIGHT]:
+            astro.position[0] = min(1.0, astro.position[0] + move_speed)
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         # Dibujar vistas
-        for x_offset, y_offset, angle_x, angle_y in [(0, 400, 0, 0), (400, 400, 0, 90), (0, 0, 90, 0), (400, 0, 30, 45)]:
+        for x_offset, y_offset, angle_x, angle_y in [(0, 300, 0, 0), (400, 300, 0, 90), (0, 0, 90, 0), (400, 0, 30, 45)]:
             setup_view(x_offset, y_offset, angle_x, angle_y, zoom)
             astro.draw()  # Dibujar el astro
-            draw_curved_lines(points, astro, max_distance=0.5, influence_factor=0.2)
+            draw_curved_lines(points, astro, max_distance=0.5, influence_factor=0.0000099)
 
         pygame.display.flip()
         pygame.time.wait(10)
