@@ -80,7 +80,7 @@ def setup_camera():
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((800, 800), DOUBLEBUF | OPENGL)
+    screen = pygame.display.set_mode((600, 600), DOUBLEBUF | OPENGL)
     pygame.display.set_caption('Curvatura del Espacio-Tiempo (Vista 3D)')
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
