@@ -99,6 +99,8 @@ def main():
     clock = pygame.time.Clock()
     move_speed = 5.0
     zoom = 0  # Zoom inicial
+    min_zoom = -30  # Límite de zoom mínimo
+    max_zoom = 25  # Límite de zoom máximo
 
     while True:
         for event in pygame.event.get():
@@ -110,6 +112,9 @@ def main():
                     zoom -= 1.0  # Acercar (zoom in)
                 elif event.button == 5:  # Rueda hacia abajo
                     zoom += 1.0  # Alejar (zoom out)
+
+        # Limitar el zoom
+        zoom = max(min_zoom, min(max_zoom, zoom))
 
         # Movimiento del astro 1 con teclas de flecha
         keys = pygame.key.get_pressed()
