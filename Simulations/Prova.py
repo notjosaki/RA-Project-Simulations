@@ -1,164 +1,175 @@
-import pygame
 from pygame.locals import *
 from OpenGL.GL import *
-from OpenGL.GL.shaders import compileProgram, compileShader
+from OpenGL.GLU import *
+import pygame
 import numpy as np
-import glm
 
-# Configura shaders para el toroide
-vertex_shader = """
-#version 330
-layout(location = 0) in vec3 in_position;
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-void main() {
-    gl_Position = projection * view * model * vec4(in_position, 1.0);
-}
-"""
+# Constantes para el anillo
+TORUS_RADIUS_MAJOR = 3.0  # Radio mayor (distancia al centro del toro)
+TORUS_RADIUS_OUTER = 0.8  # Radio externo (radio del tubo)
+TORUS_RADIUS_INNER = 0.6  # Radio interno (grosor del tubo)
+NUM_SEGMENTS_MAJOR = 64   # Divisiones alrededor del círculo mayor
+NUM_SEGMENTS_MINOR = 32   # Divisiones alrededor del círculo menor
 
-fragment_shader = """
-#version 330
-out vec4 fragColor;
-void main() {
-    fragColor = vec4(1.0, 1.0, 1.0, 1.0);  // Color blanco
-}
-"""
-
-class Toroide:
-    def __init__(self, context, radius=1.0, tube_radius=0.2, segments=50, rings=50, position=(0, 0, -5)):
-        self.ctx = context
+class Sphere:
+    """Clase para representar una esfera que rebota dentro del anillo."""
+    def __init__(self, position, velocity, radius=0.2):
+        self.position = np.array(position, dtype=float)
+        self.velocity = np.array(velocity, dtype=float)
         self.radius = radius
-        self.tube_radius = tube_radius
-        self.segments = segments
-        self.rings = rings
-        self.position = glm.vec3(position)
-        self.rotation_speed = 1.0  # Velocidad de rotación en grados
-        self.rotation_enabled = False  # Bandera para activar/desactivar la rotación
 
-        # Compilación de shaders
-        self.shader = compileProgram(
-            compileShader(vertex_shader, GL_VERTEX_SHADER),
-            compileShader(fragment_shader, GL_FRAGMENT_SHADER)
-        )
-        glUseProgram(self.shader)
+    def update(self, delta_time):
+        """Actualiza la posición de la esfera y detecta colisiones."""
+        self.position += self.velocity * delta_time
 
-        # Creación de la malla del toroide
-        self.vertices, self.indices = self.create_torus_mesh()
-        self.vao = glGenVertexArrays(1)
-        glBindVertexArray(self.vao)
+        # Rebote en los límites del toroide
+        distance_to_center = np.sqrt(self.position[0]**2 + self.position[1]**2)
+        if distance_to_center - self.radius < TORUS_RADIUS_MAJOR - TORUS_RADIUS_INNER or \
+           distance_to_center + self.radius > TORUS_RADIUS_MAJOR + TORUS_RADIUS_OUTER:
+            self.velocity[0] *= -1
+            self.velocity[1] *= -1
 
-        # Buffer de vértices
-        self.vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
-        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
-        glEnableVertexAttribArray(0)
+        if abs(self.position[2]) + self.radius > TORUS_RADIUS_OUTER:
+            self.velocity[2] *= -1
 
-        # Buffer de índices
-        self.ebo = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
+def load_texture(texture_file):
+    """Carga una textura desde un archivo y la aplica en OpenGL."""
+    texture_surface = pygame.image.load(texture_file)
+    texture_data = pygame.image.tostring(texture_surface, "RGB", 1)
+    width, height = texture_surface.get_rect().size
 
-        # Matrices de transformación
-        self.model_matrix = glm.mat4(1)
-        self.model_matrix = glm.rotate(self.model_matrix, glm.radians(90.0), glm.vec3(0, 1, 0))  # Orientación en el eje X
-        self.view_matrix = glm.translate(glm.mat4(1), self.position)
-        self.projection_matrix = glm.perspective(glm.radians(45.0), 800/600, 0.1, 100.0)
+    tex_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, tex_id)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data)
+    return tex_id
 
-        # Ubicación de matrices en el shader
-        self.model_loc = glGetUniformLocation(self.shader, "model")
-        self.view_loc = glGetUniformLocation(self.shader, "view")
-        self.projection_loc = glGetUniformLocation(self.shader, "projection")
+def draw_torus(texture_id_outer, texture_id_inner, hide_half):
+    """Dibuja un toroide hueco con dos texturas (exterior e interior)."""
+    glBindTexture(GL_TEXTURE_2D, texture_id_outer)
 
-        glUniformMatrix4fv(self.view_loc, 1, GL_FALSE, glm.value_ptr(self.view_matrix))
-        glUniformMatrix4fv(self.projection_loc, 1, GL_FALSE, glm.value_ptr(self.projection_matrix))
+    glBegin(GL_QUADS)
+    for i in range(NUM_SEGMENTS_MAJOR):
+        for j in range(NUM_SEGMENTS_MINOR):
+            theta1 = 2 * np.pi * i / NUM_SEGMENTS_MAJOR
+            theta2 = 2 * np.pi * (i + 1) / NUM_SEGMENTS_MAJOR
+            phi1 = 2 * np.pi * j / NUM_SEGMENTS_MINOR
+            phi2 = 2 * np.pi * (j + 1) / NUM_SEGMENTS_MINOR
 
-    def create_torus_mesh(self):
-        vertices = []
-        indices = []
+            if hide_half and phi1 > np.pi:  # Ocultar mitad interna del círculo menor
+                continue
 
-        for i in range(self.segments):
-            theta = 2 * np.pi * i / self.segments
-            cos_theta = np.cos(theta)
-            sin_theta = np.sin(theta)
+            def vertex_coords(theta, phi, radius):
+                x = (TORUS_RADIUS_MAJOR + radius * np.cos(phi)) * np.cos(theta)
+                y = (TORUS_RADIUS_MAJOR + radius * np.cos(phi)) * np.sin(theta)
+                z = radius * np.sin(phi)
+                return x, y, z
 
-            for j in range(self.rings):
-                phi = 2 * np.pi * j / self.rings
-                cos_phi = np.cos(phi)
-                sin_phi = np.sin(phi)
+            # Vértices con texturas para la parte externa
+            glTexCoord2f(i / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
+            glVertex3f(*vertex_coords(theta1, phi1, TORUS_RADIUS_OUTER))
+            glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
+            glVertex3f(*vertex_coords(theta2, phi1, TORUS_RADIUS_OUTER))
+            glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, (j + 1) / NUM_SEGMENTS_MINOR)
+            glVertex3f(*vertex_coords(theta2, phi2, TORUS_RADIUS_OUTER))
+            glTexCoord2f(i / NUM_SEGMENTS_MAJOR, (j + 1) / NUM_SEGMENTS_MINOR)
+            glVertex3f(*vertex_coords(theta1, phi2, TORUS_RADIUS_OUTER))
 
-                x = (self.radius + self.tube_radius * cos_phi) * cos_theta
-                y = (self.radius + self.tube_radius * cos_phi) * sin_theta
-                z = self.tube_radius * sin_phi
-                vertices.extend([x, y, z])
+    glEnd()
 
-                next_i = (i + 1) % self.segments
-                next_j = (j + 1) % self.rings
-                indices.extend([i * self.rings + j, i * self.rings + next_j])
-                indices.extend([i * self.rings + j, next_i * self.rings + j])
+    if hide_half:
+        glBindTexture(GL_TEXTURE_2D, texture_id_inner)
+        glBegin(GL_QUADS)
+        for i in range(NUM_SEGMENTS_MAJOR):
+            for j in range(NUM_SEGMENTS_MINOR):
+                theta1 = 2 * np.pi * i / NUM_SEGMENTS_MAJOR
+                theta2 = 2 * np.pi * (i + 1) / NUM_SEGMENTS_MAJOR
+                phi1 = 2 * np.pi * j / NUM_SEGMENTS_MINOR
+                phi2 = 2 * np.pi * (j + 1) / NUM_SEGMENTS_MINOR
 
-        vertices = np.array(vertices, dtype=np.float32)
-        indices = np.array(indices, dtype=np.uint32)
-        return vertices, indices
+                if phi1 > np.pi:  # Ocultar la mitad interna
+                    continue
 
-    def update(self):
-        # Solo rota el modelo si la bandera de rotación está habilitada
-        if self.rotation_enabled:
-            self.model_matrix = glm.rotate(self.model_matrix, glm.radians(self.rotation_speed), glm.vec3(1, 0, 0))
+                glTexCoord2f(i / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
+                glVertex3f(*vertex_coords(theta1, phi1, TORUS_RADIUS_INNER))
+                glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
+                glVertex3f(*vertex_coords(theta2, phi1, TORUS_RADIUS_INNER))
+                glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, (j + 1) / NUM_SEGMENTS_MINOR)
+                glVertex3f(*vertex_coords(theta2, phi2, TORUS_RADIUS_INNER))
+                glTexCoord2f(i / NUM_SEGMENTS_MAJOR, (j + 1) / NUM_SEGMENTS_MINOR)
+                glVertex3f(*vertex_coords(theta1, phi2, TORUS_RADIUS_INNER))
 
-    def draw(self):
-        # Enviar matrices de transformación al shader
-        glUniformMatrix4fv(self.model_loc, 1, GL_FALSE, glm.value_ptr(self.model_matrix))
-        
-        # Renderizado en modo líneas
-        glBindVertexArray(self.vao)
-        glDrawElements(GL_LINES, len(self.indices), GL_UNSIGNED_INT, None)
+        glEnd()
 
-    def toggle_rotation(self):
-        self.rotation_enabled = not self.rotation_enabled  # Alterna el estado de rotación
-
-    def cleanup(self):
-        glDeleteVertexArrays(1, [self.vao])
-        glDeleteBuffers(1, [self.vbo, self.ebo])
-        glDeleteProgram(self.shader)
+def draw_sphere(sphere):
+    """Dibuja una esfera en su posición actual."""
+    glPushMatrix()
+    glTranslatef(*sphere.position)
+    quadric = gluNewQuadric()
+    gluSphere(quadric, sphere.radius, 32, 32)
+    gluDeleteQuadric(quadric)
+    glPopMatrix()
 
 def main():
-    # Inicialización de pygame y OpenGL
     pygame.init()
+    global screen
     screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Toroide en malla de alambre")
+    pygame.display.set_caption("Anillo Hueco con Textura y Esferas")
+
+    gluPerspective(45, (800 / 600), 0.1, 50.0)
+    glTranslatef(0.0, 0.0, -10)
+
+    texture_id_outer = load_texture("Simulations/textura_metalica.png")
+    texture_id_inner = load_texture("Simulations/textura_interior.png")
+
+    spheres = [
+        Sphere(position=[0.0, TORUS_RADIUS_MAJOR, 0.0], velocity=[0.5, 0.3, 0.2]),
+        Sphere(position=[0.0, -TORUS_RADIUS_MAJOR, 0.0], velocity=[-0.4, -0.2, 0.1])
+    ]
+
+    rotate_x, rotate_y = 0, 0
+    dragging = False
+    hide_half = False
+
     clock = pygame.time.Clock()
 
-    # Configuración de OpenGL
-    glEnable(GL_DEPTH_TEST)
-    glClearColor(0.0, 0.0, 0.0, 1.0)  # Fondo negro
-
-    # Crear instancia de la clase Toroide
-    toroide = Toroide(context=None, radius=1.0, tube_radius=0.3, segments=60, rings=60, position=(0, 0, -5))
-
-    running = True
-    while running:
+    while True:
         for event in pygame.event.get():
-            if event.type == QUIT:
-                running = False
-            elif event.type == KEYDOWN:
-                if event.key == K_g:
-                    toroide.toggle_rotation()  # Alterna rotación al presionar 'G'
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            elif event.type == MOUSEBUTTONDOWN and event.button == 3:
+                dragging = True
+            elif event.type == MOUSEBUTTONUP and event.button == 3:
+                dragging = False
+            elif event.type == MOUSEMOTION and dragging:
+                rotate_x += event.rel[1]
+                rotate_y += event.rel[0]
+            elif event.type == KEYDOWN and event.key == K_t:
+                hide_half = not hide_half
 
-        # Limpiar pantalla
+        delta_time = clock.tick(60) / 1000.0
+        for sphere in spheres:
+            sphere.update(delta_time)
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_TEXTURE_2D)
 
-        # Actualizar y dibujar el toroide
-        toroide.update()
-        toroide.draw()
+        glPushMatrix()
+        glRotatef(rotate_x, 1, 0, 0)
+        glRotatef(rotate_y, 0, 1, 0)
 
+        draw_torus(texture_id_outer, texture_id_inner, hide_half)
+        glDisable(GL_TEXTURE_2D)
+        for sphere in spheres:
+            draw_sphere(sphere)
+        glEnable(GL_TEXTURE_2D)
+
+        glPopMatrix()
         pygame.display.flip()
-        clock.tick(60)
-
-    # Limpieza
-    toroide.cleanup()
-    pygame.quit()
+        pygame.time.wait(10)
 
 if __name__ == "__main__":
     main()

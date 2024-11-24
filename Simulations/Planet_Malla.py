@@ -123,8 +123,8 @@ def main():
     glEnable(GL_DEPTH_TEST)
 
     # Cargar textura de Marte
-    texture_earth = load_texture("earth.png")
-    textura_marte = load_texture("textura_marte.png")
+    texture_earth = load_texture("Simulations/earth.png")
+    textura_marte = load_texture("Simulations/textura_marte.png")
 
     # Crear astros
     astro1 = Astro(massa=5.97e24, position=(-3, 0), radius=3.0, color=(0.2, 0.6, 1.0), texture=texture_earth)  # Astro 1 sin textura
