@@ -65,6 +65,8 @@ def draw_grid(grid, color=(1, 1, 1)):
             if grid[i * size + j][2] is not None and grid[i * size + (j + 1)][2] is not None:
                 glVertex3f(*grid[i * size + j])
                 glVertex3f(*grid[i * size + (j + 1)])
+
+
             # Líneas en dirección Y
             if grid[j * size + i][2] is not None and grid[(j + 1) * size + i][2] is not None:
                 glVertex3f(*grid[j * size + i])
@@ -88,6 +90,15 @@ def setup_camera(zoom):
     )
 
 
+def draw_slider(x, y, width, height, value, min_val, max_val):
+    """Dibujar una barra deslizante en la pantalla para controlar el tamaño del planeta."""
+    pygame.draw.rect(screen, (255, 255, 255), (x, y, width, height))  # Fondo de la barra
+    pygame.draw.rect(screen, (200, 200, 200), (x, y, width, height))  # Contorno de la barra
+    # Dibuja el deslizador
+    slider_pos = x + (value - min_val) / (max_val - min_val) * width
+    pygame.draw.circle(screen, (255, 0, 0), (int(slider_pos), y + height // 2), 10)
+
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((600, 600), DOUBLEBUF | OPENGL)
@@ -106,16 +117,27 @@ def main():
     clock = pygame.time.Clock()
     zoom = 0  # Zoom inicial
 
+    # Configuración de la barra deslizante
+    slider_x = 50
+    slider_y = 500
+    slider_width = 500
+    slider_height = 20
+    slider_value = astro1.radius  # Valor inicial basado en el radio del astro
+    slider_min = 0.5  # Radio mínimo
+    slider_max = 5.0  # Radio máximo
+
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 return
             if event.type == MOUSEBUTTONDOWN:
-                if event.button == 4:  # Rueda hacia arriba
-                    zoom -= 1.0  # Acercar (zoom in)
-                elif event.button == 5:  # Rueda hacia abajo
-                    zoom += 1.0  # Alejar (zoom out)
+                if event.button == 1:  # Si se hace clic en la barra deslizante
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    if slider_x <= mouse_x <= slider_x + slider_width and slider_y <= mouse_y <= slider_y + slider_height:
+                        # Actualizar el valor del slider
+                        slider_value = (mouse_x - slider_x) / slider_width * (slider_max - slider_min) + slider_min
+                        astro1.radius = slider_value  # Actualizar el radio del astro
 
         # Deformar la malla según las posiciones de los astros
         deformed_grid = deform_grid(grid, astros)
@@ -131,6 +153,9 @@ def main():
         # Dibujar los astros
         for astro in astros:
             astro.draw()
+
+        # Dibujar la barra deslizante para cambiar el tamaño del planeta
+        draw_slider(slider_x, slider_y, slider_width, slider_height, slider_value, slider_min, slider_max)
 
         pygame.display.flip()
         clock.tick(60)
