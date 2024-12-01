@@ -72,10 +72,10 @@ def deform_grid(grid, astros, G=6.674e-11, c=3e8):
             
             if distance > astro.radius:  # Solo deformar puntos fuera del radio del planeta
                 schwarzschild_radius = 2 * G * astro.massa / c**2
-                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
+                deformation = schwarzschild_radius / (distance + 1e-10)  # Gravedad decrece con la distancia
                 
                 # Aseguramos que la deformación siempre resta al eje Z
-                z_new = z - deformation * 5000  # Escalar para visualización
+                z_new = z - deformation * 2000  # Escalar para visualización
                 z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
 
             deformed_grid[i] = [x, y, z]
@@ -116,15 +116,15 @@ def setup_camera(zoom):
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((600, 600), DOUBLEBUF | OPENGL)
+    screen = pygame.display.set_mode((700, 700), DOUBLEBUF | OPENGL)
     pygame.display.set_caption('Curvatura del Espacio-Tiempo (Vista 3D)')
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
 
     # Cargar textura de Marte
-    texture_earth = load_texture("Simulations/earth.png")
-    textura_marte = load_texture("Simulations/textura_marte.png")
+    texture_earth = load_texture("earth.png")
+    textura_marte = load_texture("textura_marte.png")
 
     # Crear astros
     astro1 = Astro(massa=5.97e24, position=(-3, 0), radius=3.0, color=(0.2, 0.6, 1.0), texture=texture_earth)  # Astro 1 sin textura
