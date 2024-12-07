@@ -3,6 +3,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
+import Objects.Particles as Particle
 
 # Constantes para el anillo
 TORUS_RADIUS_MAJOR = 3.0  # Radio mayor (distancia al centro del toro)
@@ -99,8 +100,8 @@ def main():
     glTranslatef(0.0, 0.0, -10)
 
     # Cargar texturas
-    texture_id_outer = load_texture("textura_metalica.png")
-    texture_id_inner = load_texture("textura_interior.png")
+    texture_id_outer = load_texture("Simulations/Imatges/textura_metalica.png")
+    texture_id_inner = load_texture("Simulations/Imatges/textura_interior.png")
 
     # Variables de estado
     rotate_x, rotate_y = 0, 0
