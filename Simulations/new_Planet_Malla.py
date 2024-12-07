@@ -116,10 +116,10 @@ def deform_grid(grid, astros, G=6.674e-11, c=3e8):
 
             if distance > astro.radius:  # Solo deformar puntos fuera del radio del planeta
                 schwarzschild_radius = 2 * G * astro.massa / c**2
-                deformation = schwarzschild_radius / (distance + 1e-10)  # Gravedad decrece con la distancia
+                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
 
                 # Aseguramos que la deformación siempre resta al eje Z
-                z_new = z - deformation * 2000  # Escalar para visualización
+                z_new = z - deformation * 1000  # Escalar para visualización
                 z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
 
             deformed_grid[i] = [x, y, z]
@@ -207,7 +207,7 @@ def main_menu(planets):
             planet.draw_name()
 
         # Mostrar texto del menú
-        draw_text("Haz clic en un planeta para seleccionarlo", (150, 100), size=30, color=(255, 255, 255))
+        draw_text("Haz clic en un planeta para seleccionarlo", (280, 60), size=30, color=(255, 255, 255))
         draw_text("ESC para salir", (280, 60), size=25, color=(200, 200, 200))
 
         pygame.display.flip()
@@ -248,8 +248,8 @@ def main_menu(planets):
             planet.draw_name()
 
         # Mostrar texto del menú
-        draw_text("Haz clic en un planeta para seleccionarlo", (150, 100), size=30, color=(255, 255, 255))
-        draw_text("ESC para salir", (280, 60), size=25, color=(200, 200, 200))
+        draw_text("Selecciona qualsevol planeta", (150, 100), size=30, color=(255, 255, 255))
+        draw_text("ESC per sortir", (280, 60), size=25, color=(200, 200, 200))
 
         pygame.display.flip()
         rotation_angle += 1  # Incrementar ángulo para rotación
@@ -275,14 +275,14 @@ def main():
 
     # Crear planetas del menú
     menu_planets = [
-        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Earth"),
-        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mars"),
-        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Jupiter"),
-        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Venus"),
-        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Saturn"),
-        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mercury"),
-        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Uranus"),
-        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Neptune"),
+        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
+        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
+        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
+        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
+        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
+        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
+        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
+        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
     ]
 
     # Mostrar menú principal para seleccionar un planeta

@@ -70,13 +70,21 @@ def deform_grid(grid, astros, G=6.674e-11, c=3e8):
             dx, dy = astro.position[0] - x, astro.position[1] - y
             distance = np.sqrt(dx**2 + dy**2)
             
-            if distance > astro.radius:  # Solo deformar puntos fuera del radio del planeta
+            if distance > astro.position[0] - x: 
                 schwarzschild_radius = 2 * G * astro.massa / c**2
-                deformation = schwarzschild_radius / (distance + 1e-10)  # Gravedad decrece con la distancia
+                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
+                
+                # Aseguramos que la deformación siempre resta al eje Z
+                z_new = z - deformation * 1000  # Escalar para visualización
+                z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
+
+            elif distance > astro.position[1]-y: 
+                schwarzschild_radius = 2 * G * astro.massa / c**2
+                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
                 
                 # Aseguramos que la deformación siempre resta al eje Z
                 z_new = z - deformation * 2000  # Escalar para visualización
-                z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
+                z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual            
 
             deformed_grid[i] = [x, y, z]
     return deformed_grid
@@ -127,8 +135,8 @@ def main():
     textura_marte = load_texture("textura_marte.png")
 
     # Crear astros
-    astro1 = Astro(massa=5.97e24, position=(-3, 0), radius=3.0, color=(0.2, 0.6, 1.0), texture=texture_earth)  # Astro 1 sin textura
-    astro2 = Astro(massa=5.97e24, position=(3, 0), radius=3.5, color=(1.0, 0.6, 0.2), texture=textura_marte)  # Astro 2 con textura
+    astro1 = Astro(massa=5.97e24, position=(-3, 0), radius=6.38, color=(0.2, 0.6, 1.0), texture=texture_earth)  # Astro 1 sin textura
+    astro2 = Astro(massa=6.39e23, position=(3, 0), radius=3.39, color=(1.0, 0.6, 0.2), texture=textura_marte)  # Astro 2 con textura
 
     astros = [astro1, astro2]
 
