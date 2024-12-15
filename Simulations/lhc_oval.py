@@ -3,11 +3,9 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
-from random import uniform
-import time
 from random import uniform, choice
 import pandas as pd
-import os
+import time
 
 # Constantes para el toroide
 TORUS_RADIUS_MAJOR = 3.0
@@ -19,40 +17,39 @@ NUM_SEGMENTS_MINOR = 32
 OVAL_FACTOR_X = 2.0
 OVAL_FACTOR_Y = 1.0
 
-collision_log = []  # Lista global para registrar colisiones
+# Diccionario para registrar las colisiones
+collision_log = {}
 
+def register_collision(type1, type2):
+    """Registra una colisión en el log ignorando el orden de las partículas."""
+    if type1 is None or type2 is None:
+        return  # Ignorar colisiones si uno de los tipos no está definido
+    pair = tuple(sorted([type1, type2]))
+    if pair in collision_log:
+        collision_log[pair] += 1
+    else:
+        collision_log[pair] = 1
 
 class Particle:
     def __init__(self, angle, z_position, angular_velocity, z_velocity, radius, texture_id=None, particle_type=None):
-        """
-        Inicializa una partícula con posición angular, en el eje Z, textura y tipo.
-        """
         self.angle = angle
         self.z_position = z_position
         self.angular_velocity = angular_velocity
         self.z_velocity = z_velocity
         self.radius = radius
         self.texture_id = texture_id
-        self.particle_type = particle_type  # Tipo de partícula (lepton, boson, quark, proton, neutron)
+        self.particle_type = particle_type
 
     def update(self, torus_radius_major, torus_radius_inner):
-        """
-        Actualiza la posición de la partícula siguiendo el patrón del tubo.
-        """
-        # Actualizar ángulo para movimiento orbital
         self.angle += self.angular_velocity
-        if self.angle > 2 * np.pi:  # Mantener ángulo en el rango [0, 2π]
+        if self.angle > 2 * np.pi:
             self.angle -= 2 * np.pi
 
-        # Actualizar posición en el eje Z
         self.z_position += self.z_velocity
-        if abs(self.z_position) > torus_radius_inner:  # Rebote en las paredes del tubo
+        if abs(self.z_position) > torus_radius_inner:
             self.z_velocity *= -1
 
     def draw(self):
-        """
-        Dibuja la partícula en su posición actual calculada a partir del ángulo y Z.
-        """
         x = TORUS_RADIUS_MAJOR * np.cos(self.angle) * OVAL_FACTOR_X
         y = TORUS_RADIUS_MAJOR * np.sin(self.angle) * OVAL_FACTOR_Y
         z = self.z_position
@@ -61,7 +58,6 @@ class Particle:
         glTranslatef(x, y, z)
 
         if self.texture_id:
-            # Si tiene textura, aplícala
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, self.texture_id)
             quad = gluNewQuadric()
@@ -70,16 +66,13 @@ class Particle:
             gluDeleteQuadric(quad)
             glDisable(GL_TEXTURE_2D)
         else:
-            # Dibujar sin textura
             quad = gluNewQuadric()
             gluSphere(quad, self.radius, 16, 16)
             gluDeleteQuadric(quad)
 
         glPopMatrix()
 
-    def check_collision(self, other_particle, particles, particles_to_remove, texture_neutron):
-        global collision_log
-        # Lógica para detectar colisiones
+    def check_collision(self, other_particle, particles, texture_neutron):
         x1 = TORUS_RADIUS_MAJOR * np.cos(self.angle) * OVAL_FACTOR_X
         y1 = TORUS_RADIUS_MAJOR * np.sin(self.angle) * OVAL_FACTOR_Y
         z1 = self.z_position
@@ -91,14 +84,14 @@ class Particle:
         distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
 
         if distance < self.radius + other_particle.radius:
-            # Registrar la colisión entre tipos
-            collision_log.append(f"{self.particle_type} + {other_particle.particle_type}")
+            # Registrar la colisión
+            register_collision(self.particle_type, other_particle.particle_type)
 
-            # Reglas especiales de colisión
+            # Lógica de colisiones especiales
             if (self.particle_type == "lepton" and other_particle.particle_type == "boson") or \
-            (self.particle_type == "boson" and other_particle.particle_type == "lepton"):
-                collision_log.append("Lepton + Boson -> 3 Neutrones")
-                particles_to_remove.update([self, other_particle])  # Marcar para eliminación
+               (self.particle_type == "boson" and other_particle.particle_type == "lepton"):
+                particles.remove(self)
+                particles.remove(other_particle)
                 for _ in range(3):
                     particles.append(Particle(
                         angle=uniform(0, 2 * np.pi),
@@ -109,25 +102,17 @@ class Particle:
                         texture_id=texture_neutron,
                         particle_type="neutron"
                     ))
-
             elif self.particle_type == "proton" and other_particle.particle_type == "quark":
-                collision_log.append("Proton + Quark -> Higgs")
                 self.particle_type = "higgs"
                 self.texture_id = textura_higgs
-                particles_to_remove.add(other_particle)  # Marcar quark para eliminación
-
-            elif self.particle_type == "neutron" or other_particle.particle_type == "neutron":
-                collision_log.append("Neutron + Any -> Repulsion")
-                self.z_velocity, other_particle.z_velocity = other_particle.z_velocity, self.z_velocity
-
-
-
+                particles.remove(other_particle)
             elif self.particle_type == "quark" and other_particle.particle_type == "proton":
-                collision_log.append("Proton + Quark -> Higgs")
                 other_particle.particle_type = "higgs"
                 other_particle.texture_id = textura_higgs
                 particles.remove(self)
-
+            elif self.particle_type == "neutron" or other_particle.particle_type == "neutron":
+                self.z_velocity, other_particle.z_velocity = other_particle.z_velocity, self.z_velocity
+                self.angular_velocity, other_particle.angular_velocity = other_particle.angular_velocity, self.angular_velocity
 
 def load_texture(texture_file):
     texture_surface = pygame.image.load(texture_file)
@@ -148,9 +133,6 @@ def vertex_coords(theta, phi, radius):
     return x, y, z
 
 def draw_torus(texture_id_outer, texture_id_inner, hide_half):
-    """Dibuja un toroide con texturas diferentes para el exterior y el interior."""
-    
-    # Dibujar la superficie exterior del toroide
     glBindTexture(GL_TEXTURE_2D, texture_id_outer)
     glBegin(GL_QUADS)
     for i in range(NUM_SEGMENTS_MAJOR):
@@ -163,7 +145,6 @@ def draw_torus(texture_id_outer, texture_id_inner, hide_half):
             if hide_half and phi1 > np.pi:
                 continue
 
-            # Exterior
             glTexCoord2f(i / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
             glVertex3f(*vertex_coords(theta1, phi1, TORUS_RADIUS_OUTER))
             glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
@@ -174,7 +155,6 @@ def draw_torus(texture_id_outer, texture_id_inner, hide_half):
             glVertex3f(*vertex_coords(theta1, phi2, TORUS_RADIUS_OUTER))
     glEnd()
 
-    # Dibujar la superficie interior del toroide
     glBindTexture(GL_TEXTURE_2D, texture_id_inner)
     glBegin(GL_QUADS)
     for i in range(NUM_SEGMENTS_MAJOR):
@@ -187,7 +167,6 @@ def draw_torus(texture_id_outer, texture_id_inner, hide_half):
             if hide_half and phi1 > np.pi:
                 continue
 
-            # Interior
             glTexCoord2f(i / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
             glVertex3f(*vertex_coords(theta1, phi1, TORUS_RADIUS_INNER))
             glTexCoord2f((i + 1) / NUM_SEGMENTS_MAJOR, j / NUM_SEGMENTS_MINOR)
@@ -198,146 +177,28 @@ def draw_torus(texture_id_outer, texture_id_inner, hide_half):
             glVertex3f(*vertex_coords(theta1, phi2, TORUS_RADIUS_INNER))
     glEnd()
 
-
-# Menú principal
-def menu():
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-    font = pygame.font.SysFont("Arial", 36)
-    choice = None
-
-    while choice is None:
-        screen.fill((0, 0, 0))
-        text1 = font.render("1: Simulación Creativa", True, (255, 255, 255))
-        text2 = font.render("2: Simulación Programada", True, (255, 255, 255))
-        screen.blit(text1, (200, 200))
-        screen.blit(text2, (200, 300))
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                exit()
-            elif event.type == KEYDOWN:
-                if event.key == K_1:
-                    choice = "creative"
-                elif event.key == K_2:
-                    choice = "programmed"
-
-    return choice
-
-# Simulación Programada
-def programmed_simulation(particles, textures, duration=60):
-    """
-    Ejecuta la simulación programada durante un tiempo específico.
-    """
-    start_time = time.time()
-    last_particle_time = start_time
-
-    while time.time() - start_time < duration:
-        current_time = time.time()
-
-        # Añadir partículas cada segundo
-        if current_time - last_particle_time >= 1:
-            particle_type = choice(["lepton", "boson", "proton", "quark", "neutron"])
-            texture = textures[particle_type]
-            new_particle = Particle(
-                angle=uniform(0, 2 * np.pi),
-                z_position=uniform(-TORUS_RADIUS_INNER, TORUS_RADIUS_INNER),
-                angular_velocity=uniform(0.01, 0.05),
-                z_velocity=uniform(-0.02, 0.02),
-                radius=0.05,
-                texture_id=texture,
-                particle_type=particle_type
-            )
-            particles.append(new_particle)
-            last_particle_time = current_time
-
-        # Crear un conjunto para eliminar partículas de manera segura
-        particles_to_remove = set()
-
-        # Renderizar la simulación
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glEnable(GL_DEPTH_TEST)
-
-        # Dibujar y actualizar partículas
-        particles_copy = particles[:]  # Copia segura de la lista
-        for i, particle in enumerate(particles_copy):
-            for j in range(i + 1, len(particles_copy)):
-                if particle in particles_to_remove or particles_copy[j] in particles_to_remove:
-                    continue  # Saltar si alguna partícula está marcada para eliminar
-                particle.check_collision(particles_copy[j], particles, particles_to_remove, textures["neutron"])
-            particle.update(TORUS_RADIUS_MAJOR, TORUS_RADIUS_INNER)
-            particle.draw()
-
-        # Eliminar las partículas marcadas
-        particles = [p for p in particles if p not in particles_to_remove]
-
-        pygame.display.flip()
-        pygame.time.wait(10)
-
-    # Guardar los datos al finalizar la simulación
-    export_to_excel()
-
-
-# Exportar datos a Excel
 def export_to_excel():
-    global collision_log
-    if collision_log:
-        # Eliminar el archivo si ya existe
-        if os.path.exists("collision_analysis.xlsx"):
-            os.remove("collision_analysis.xlsx")
-
-        # Crear el archivo Excel con los datos
-        total_collisions = len(collision_log)
-        colisiones_agrupadas = pd.Series(collision_log).value_counts().reset_index()
-        colisiones_agrupadas.columns = ["Tipo de Colisión", "Cantidad"]
-
-        with pd.ExcelWriter("collision_analysis.xlsx", mode="w") as writer:
-            colisiones_agrupadas.to_excel(writer, sheet_name="Resumen", index=False)
-            summary = pd.DataFrame({"Total de Colisiones": [total_collisions]})
-            summary.to_excel(writer, sheet_name="Total", index=False)
-
-        print("Archivo Excel guardado: collision_analysis.xlsx")
-    else:
-        print("No hay colisiones registradas para exportar.")
-
-
+    collision_data = [(key[0], key[1], count) for key, count in collision_log.items()]
+    df = pd.DataFrame(collision_data, columns=["Partícula 1", "Partícula 2", "Colisiones"])
+    df.to_excel("collision_analysis.xlsx", index=False)
+    print("Archivo Excel guardado: collision_analysis.xlsx")
 
 def main():
-
-    choice = menu()
     pygame.init()
     screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption("Acelerador de partículas con colisiones")
+
     gluPerspective(45, (800 / 600), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -12)
 
-    global textura_higgs, textura_neutron
+    # Cargar texturas
+    texture_id_outer = load_texture("textura_metalica.png")
+    texture_id_inner = load_texture("textura_interior.png")
     textura_lepton = load_texture("lepton.png")
     textura_higgs = load_texture("higgs.png")
     textura_quark = load_texture("quark.png")
     textura_boson = load_texture("boson.png")
-    textura_proton = load_texture("proton.png")
     textura_neutron = load_texture("neutron.png")
-    texture_id_outer = load_texture("textura_metalica.png")
-    texture_id_inner = load_texture("textura_interior.png")
-
-    textures = {
-        "lepton": textura_lepton,
-        "higgs": textura_higgs,
-        "quark": textura_quark,
-        "boson": textura_boson,
-        "proton": textura_proton,
-        "neutron": textura_neutron
-    }
-
-    particles = []
-
-    if choice == "programmed":
-        programmed_simulation(particles, textures)
-        pygame.quit()
-        return
-
 
     hide_half = False
     zoom_level = -12.0
@@ -357,6 +218,7 @@ def main():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                export_to_excel()
                 pygame.quit()
                 return
             elif event.type == KEYDOWN:
