@@ -115,12 +115,12 @@ def main():
 
     # Cargar texturas
     textures = {
-        'lepton': load_texture(r'Simulations/Imatges/textura-verde.png'),
-        'neutron': load_texture(r'Simulations/Imatges/textura-gris.png'),
-        'proton': load_texture(r'C:Simulations/Imatges/textura-azul.png'),
-        'quark': load_texture(r'C:Simulations/Imatges/textura-morada.png'),
-        'boson': load_texture(r'C:Simulations/Imatges/textura-roja.png'),
-        'higgs': load_texture(r'C:Simulations/Imatges/textura-amarilla.png'),
+        'lepton': load_texture(r'Imatges/textura-verde.png'),
+        'neutron': load_texture(r'Imatges/textura-gris.png'),
+        'proton': load_texture(r'Imatges/textura-azul.png'),
+        'quark': load_texture(r'Imatges/textura-morada.png'),
+        'boson': load_texture(r'Imatges/textura-roja.png'),
+        'higgs': load_texture(r'Imatges/textura-amarilla.png'),
     }
 
     spheres = []
