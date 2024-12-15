@@ -192,13 +192,13 @@ def main():
     glTranslatef(0.0, 0.0, -12)
 
     # Cargar texturas
-    texture_id_outer = load_texture("textura_metalica.png")
-    texture_id_inner = load_texture("textura_interior.png")
-    textura_lepton = load_texture("lepton.png")
-    textura_higgs = load_texture("higgs.png")
-    textura_quark = load_texture("quark.png")
-    textura_boson = load_texture("boson.png")
-    textura_neutron = load_texture("neutron.png")
+    texture_id_outer = load_texture("Simulations/textura_metalica.png")
+    texture_id_inner = load_texture("Simulations/textura_interior.png")
+    textura_lepton = load_texture("Simulations/lepton.png")
+    textura_higgs = load_texture("Simulations/higgs.png")
+    textura_quark = load_texture("Simulations/quark.png")
+    textura_boson = load_texture("Simulations/boson.png")
+    textura_neutron = load_texture("Simulations/neutron.png")
 
     hide_half = False
     zoom_level = -12.0
