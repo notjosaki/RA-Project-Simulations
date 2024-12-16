@@ -20,15 +20,27 @@ OVAL_FACTOR_Y = 1.0
 # Diccionario para registrar las colisiones
 collision_log = {}
 
-def register_collision(type1, type2):
-    """Registra una colisión en el log ignorando el orden de las partículas."""
-    if type1 is None or type2 is None:
-        return  # Ignorar colisiones si uno de los tipos no está definido
-    pair = tuple(sorted([type1, type2]))
+def register_collision(p1, p2):
+    pair = tuple(sorted([p1.particle_type, p2.particle_type]))
+    # Calcular energía de impacto basada en las propiedades de las partículas
+    impact_energy = 0.5 * p1.radius * (p1.angular_velocity**2 + p1.z_velocity**2) + \
+                    0.5 * p2.radius * (p2.angular_velocity**2 + p2.z_velocity**2)
+
     if pair in collision_log:
-        collision_log[pair] += 1
+        count, total_energy, first_impact_energy, _ = collision_log[pair]
+        collision_log[pair] = (
+            count + 1,  # Incrementar el contador
+            total_energy + impact_energy,  # Sumar energía de impacto
+            first_impact_energy,  # Mantener el primer impacto
+            impact_energy  # Actualizar la última energía de impacto
+        )
     else:
-        collision_log[pair] = 1
+        collision_log[pair] = (
+            1,  # Primera colisión
+            impact_energy,  # Energía acumulada
+            impact_energy,  # Primera energía de impacto
+            impact_energy  # Última energía de impacto
+        )
 
 class Particle:
     def __init__(self, angle, z_position, angular_velocity, z_velocity, radius, texture_id=None, particle_type=None):
@@ -85,7 +97,7 @@ class Particle:
 
         if distance < self.radius + other_particle.radius:
             # Registrar la colisión
-            register_collision(self.particle_type, other_particle.particle_type)
+            register_collision(self,other_particle)
 
             # Lógica de colisiones especiales
             if (self.particle_type == "lepton" and other_particle.particle_type == "boson") or \
@@ -177,11 +189,32 @@ def draw_torus(texture_id_outer, texture_id_inner, hide_half):
             glVertex3f(*vertex_coords(theta1, phi2, TORUS_RADIUS_INNER))
     glEnd()
 
+import pandas as pd
+
 def export_to_excel():
-    collision_data = [(key[0], key[1], count) for key, count in collision_log.items()]
-    df = pd.DataFrame(collision_data, columns=["Partícula 1", "Partícula 2", "Colisiones"])
+    # Convertir los datos del collision_log a una lista de tuplas para exportar
+    collision_data = [
+        (
+            key[0],  # Partícula 1
+            key[1],  # Partícula 2
+            count,   # Número de colisiones
+            total_energy,  # Energía acumulada
+            first_impact_energy,  # Primera energía de impacto
+            last_impact_energy  # Última energía de impacto
+        )
+        for key, (count, total_energy, first_impact_energy, last_impact_energy) in collision_log.items()
+    ]
+    
+    # Crear un DataFrame a partir de los datos
+    df = pd.DataFrame(
+        collision_data,
+        columns=["Partícula 1", "Partícula 2", "Colisiones", "Energía acumulada", "Primera energía de impacto", "Última energía de impacto"]
+    )
+    
+    # Exportar a un archivo Excel
     df.to_excel("collision_analysis.xlsx", index=False)
     print("Archivo Excel guardado: collision_analysis.xlsx")
+
 
 def main():
     pygame.init()
@@ -192,13 +225,13 @@ def main():
     glTranslatef(0.0, 0.0, -12)
 
     # Cargar texturas
-    texture_id_outer = load_texture("Simulations/textura_metalica.png")
-    texture_id_inner = load_texture("Simulations/textura_interior.png")
-    textura_lepton = load_texture("Simulations/lepton.png")
-    textura_higgs = load_texture("Simulations/higgs.png")
-    textura_quark = load_texture("Simulations/quark.png")
-    textura_boson = load_texture("Simulations/boson.png")
-    textura_neutron = load_texture("Simulations/neutron.png")
+    texture_id_outer = load_texture("Simulations/Imatges/textura_metalica.png")
+    texture_id_inner = load_texture("Simulations/Imatges/textura_interior.png")
+    textura_lepton = load_texture("Simulations/Imatges/lepton.png")
+    textura_higgs = load_texture("Simulations/Imatges/higgs.png")
+    textura_quark = load_texture("Simulations/Imatges/quark.png")
+    textura_boson = load_texture("Simulations/Imatges/boson.png")
+    textura_neutron = load_texture("Simulations/Imatges/neutron.png")
 
     hide_half = False
     zoom_level = -12.0
