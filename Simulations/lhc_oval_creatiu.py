@@ -42,7 +42,7 @@ def register_collision(p1, p2):
         )
 
 class Particle:
-    def __init__(self, angle, z_position, angular_velocity, z_velocity, radius, texture_id=None, particle_type=None):
+    def __init__(self, angle, z_position, angular_velocity, z_velocity, radius, texture_id, particle_type):
         self.angle = angle
         self.z_position = z_position
         self.angular_velocity = angular_velocity
@@ -97,10 +97,10 @@ class Particle:
         if distance < self.radius + other_particle.radius:
             # Registrar la colisión
             register_collision(self,other_particle)
-
+            textura_higgs = load_texture("higgs.png")
             # Lógica de colisiones especiales
-            if (self.particle_type == "lepton" and other_particle.particle_type == "boson") or \
-               (self.particle_type == "boson" and other_particle.particle_type == "lepton"):
+            if (self.particle_type == "Lepton" and other_particle.particle_type == "Boson") or \
+               (self.particle_type == "Boson" and other_particle.particle_type == "Lepton"):
                 particles.remove(self)
                 particles.remove(other_particle)
                 for _ in range(3):
@@ -111,17 +111,17 @@ class Particle:
                         z_velocity=uniform(-0.02, 0.02),
                         radius=0.05,
                         texture_id=texture_neutron,
-                        particle_type="neutron"
+                        particle_type="Neutron"
                     ))
-            elif self.particle_type == "proton" and other_particle.particle_type == "quark":
-                self.particle_type = "higgs"
+            elif self.particle_type == "Proton" and other_particle.particle_type == "Quark":
+                self.particle_type = "Higgs"
                 self.texture_id = textura_higgs
                 particles.remove(other_particle)
-            elif self.particle_type == "quark" and other_particle.particle_type == "proton":
-                other_particle.particle_type = "higgs"
+            elif self.particle_type == "Quark" and other_particle.particle_type == "Proton":
+                other_particle.particle_type = "Higgs"
                 other_particle.texture_id = textura_higgs
                 particles.remove(self)
-            elif self.particle_type == "neutron" or other_particle.particle_type == "neutron":
+            elif self.particle_type == "Neutron" or other_particle.particle_type == "Neutron":
                 self.z_velocity, other_particle.z_velocity = other_particle.z_velocity, self.z_velocity
                 self.angular_velocity, other_particle.angular_velocity = other_particle.angular_velocity, self.angular_velocity
 
@@ -211,8 +211,11 @@ def export_to_excel():
     )
     
     # Exportar a un archivo Excel
-    df.to_excel("collision_analysis.xlsx", index=False)
-    print("Archivo Excel guardado: collision_analysis.xlsx")
+    nombre_archivo = str(input("Introduce el nombre del archivo Excel de la simulación: "))
+    if not nombre_archivo.endswith(".xlsx"):
+            nombre_archivo += ".xlsx"
+    print(f"Guardando archivo Excel como: {nombre_archivo}")
+    df.to_excel(nombre_archivo, index=False)
 
 
 def main():
@@ -231,6 +234,7 @@ def main():
     textura_quark = load_texture("quark.png")
     textura_boson = load_texture("boson.png")
     textura_neutron = load_texture("neutron.png")
+    textura_proton = load_texture("proton.png")
 
     hide_half = False
     zoom_level = -12.0
@@ -268,7 +272,9 @@ def main():
                         z_position=uniform(-TORUS_RADIUS_INNER, TORUS_RADIUS_INNER),
                         angular_velocity=uniform(0.01, 0.05),
                         z_velocity=uniform(-0.02, 0.02),
-                        radius=0.05
+                        radius=0.05,
+                        texture_id=textura_proton,
+                        particle_type="Proton"
                     )
                     particles.append(new_particle)
                 elif event.key == K_o:
@@ -279,7 +285,7 @@ def main():
                         z_velocity=uniform(-0.02, 0.02),
                         radius=0.05,
                         texture_id=textura_neutron,
-                        particle_type="neutron"
+                        particle_type="Neutron"
                     )
                     particles.append(new_particle_outer)
                 elif event.key == K_l:  # Tecla L para leptones
@@ -290,7 +296,7 @@ def main():
                         z_velocity=uniform(-0.03, 0.03),
                         radius=0.06,
                         texture_id=textura_lepton,
-                        particle_type="lepton"
+                        particle_type="Lepton"
                     )
                     particles.append(new_lepton)
                 elif event.key == K_h:  # Tecla H para Higgs
@@ -301,7 +307,7 @@ def main():
                         z_velocity=uniform(-0.01, 0.02),
                         radius=0.08,
                         texture_id=textura_higgs,
-                        particle_type="higgs"
+                        particle_type="Higgs"
                     )
                     particles.append(new_higgs)
                 elif event.key == K_q:  # Tecla Q para quarks
@@ -312,7 +318,7 @@ def main():
                         z_velocity=uniform(-0.04, 0.04),
                         radius=0.05,
                         texture_id=textura_quark,
-                        particle_type="quark"
+                        particle_type="Quark"
                     )
                     particles.append(new_quark)
                 elif event.key == K_b:  # Tecla B para bosones
@@ -323,7 +329,7 @@ def main():
                         z_velocity=uniform(-0.02, 0.02),
                         radius=0.07,
                         texture_id=textura_boson,
-                        particle_type="boson"
+                        particle_type="Boson"
                     )
                     particles.append(new_boson)
             elif event.type == MOUSEBUTTONDOWN:
@@ -352,9 +358,11 @@ def main():
         # Actualizar y dibujar partículas
         glDisable(GL_TEXTURE_2D)
 
-        for i, particle in enumerate(particles):
-            for j in range(i + 1, len(particles)):
-                particle.check_collision(particles[j], particles, textura_neutron)
+        for i, particle in enumerate(particles[:]):  # Iterar sobre una copia
+            for j in range(i + 1, len(particles[:])):
+                if j < len(particles):  # Asegurarse de que el índice sea válido
+                    particle.check_collision(particles[j], particles, textura_neutron)
+
             particle.update(TORUS_RADIUS_MAJOR, TORUS_RADIUS_INNER)
             particle.draw()
 

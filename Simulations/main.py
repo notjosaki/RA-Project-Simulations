@@ -84,7 +84,7 @@ btn_100spheres.pack(pady=5)
 btn_acelerador = crear_boton("LHC Primera Versio", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/lhc_box.py")
 btn_acelerador.pack(pady=5)
 
-btn_dos_cubos = crear_boton("LHC Realista", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/lhc_oval.py")
+btn_dos_cubos = crear_boton("LHC Realista", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/menu_prin.py")
 btn_dos_cubos.pack(pady=5)
 
 # Botón de salida con efecto hover
