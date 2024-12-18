@@ -75,14 +75,8 @@ def crear_boton(text, script_name):
 btn_100spheres = crear_boton("Simulació Malla Gravitacional", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/Planet_Malla.py")
 btn_100spheres.pack(pady=5)
 
-btn_100spheres = crear_boton("Simulació Cub Gravitacional", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/Planet_Simulation.py")
-btn_100spheres.pack(pady=5)
-
 btn_100spheres = crear_boton("Simulació Partícules Cub", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/new_cube_box.py")
 btn_100spheres.pack(pady=5)
-
-btn_acelerador = crear_boton("LHC Primera Versio", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/lhc_box.py")
-btn_acelerador.pack(pady=5)
 
 btn_dos_cubos = crear_boton("LHC Realista", "C:/Users/figue/Documents/UAB/UAB/Setè Quatri/RA-Project-Simulations/Simulations/menu_prin.py")
 btn_dos_cubos.pack(pady=5)
