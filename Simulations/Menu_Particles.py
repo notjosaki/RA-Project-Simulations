@@ -180,23 +180,20 @@ def main_menu():
     """Pantalla del menú principal con planetas giratorios."""
     rotation_angle = 0
     clock = pygame.time.Clock()
-    texture_earth = load_texture("Simulations/Imatges/earth.png")
-    texture_mars = load_texture("Simulations/Imatges/marth.jpg")
-    texture_jupiter = load_texture("Simulations/Imatges/jupiter.png")
-    texture_venus = load_texture("Simulations/Imatges/venus.png")
-    texture_saturn = load_texture("Simulations/Imatges/saturno.png")
-    texture_mercury = load_texture("Simulations/Imatges/mercurio.png")
-    texture_uranus = load_texture("Simulations/Imatges/urano.png")
-    texture_neptune = load_texture("Simulations/Imatges/neptuno.png")
+    # Cargar texturas
+    textura_lepton = load_texture("Simulations/imatges/lepton.png")
+    textura_higgs = load_texture("higgs.png")
+    textura_neutron = load_texture("quark.png")
+    textura_boson = load_texture("boson.png")
+    textura_neutron = load_texture("neutron.png")
+    textura_proton = load_texture("proton.png")
     planets = [
-        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
-        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
-        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
-        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
-        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
-        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
-        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
-        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
+        Astro(massa=1, position=(-6, 5), radius=1.5, texture=textura_boson, name="Boson"),
+        Astro(massa=1, position=(-2, 5), radius=1.5, texture=textura_higgs, name="Bosson-Highs"),
+        Astro(massa=1, position=(2, 5), radius=1.5, texture=textura_neutron, name="Neutron"),
+        Astro(massa=1, position=(6, 5), radius=1.5, texture=textura_proton, name="Proton"),
+        Astro(massa=1, position=(-6, -1), radius=1.5, texture=textura_lepton, name="Leptos"),
+    
     ]
     while True:
         mouse_pos = pygame.mouse.get_pos()

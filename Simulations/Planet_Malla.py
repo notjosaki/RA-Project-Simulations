@@ -130,9 +130,41 @@ def main():
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
     # Cargar textura de Marte
+    Textura = {
+    "Earth": load_texture("Simulations/Imatges/earth.png"),
+    "Mars": load_texture("Simulations/Imatges/marth.jpg"),
+    "Jupiter": load_texture("Simulations/Imatges/jupiter.png"),
+    "Venus": load_texture("Simulations/Imatges/venus.png"),
+    "Saturn": load_texture("Simulations/Imatges/saturno.png"),
+    "Mercury": load_texture("Simulations/Imatges/mercurio.png"),
+    "Uranus": load_texture("Simulations/Imatges/urano.png"),
+    "Neptune": load_texture("Simulations/Imatges/neptuno.png"),
+    }
+
+    planet_data = {
+    "Mercury": {"massa": 3.3e23, "radius": 3},       # Radio proporcional más pequeño
+    "Venus": {"massa": 4.87e24, "radius": 4.7},      # Aproximadamente proporcional a su tamaño real
+    "Earth": {"massa": 5.97e24, "radius": 5},        # La Tierra se toma como referencia
+    "Mars": {"massa": 6.42e23, "radius": 3.4},       # Marte es más pequeño que la Tierra
+    "Jupiter": {"massa": 1.9e27, "radius": 15},      # Júpiter tiene el radio más grande (máximo de la escala)
+    "Saturn": {"massa": 5.68e26, "radius": 12},      # Saturno es un poco más pequeño que Júpiter
+    "Uranus": {"massa": 8.68e25, "radius": 8},       # Urano tiene un radio menor que Saturno
+    "Neptune": {"massa": 1.02e26, "radius": 7.8},    # Neptuno es ligeramente más pequeño que Urano
+    }
+
+
     a1=main_menu()
     a2=main_menu()
-    astros=[a1,a2]
+
+    p1=planet_data[a1.name]
+    p2=planet_data[a2.name]
+    t1=Textura[a1.name]
+    t2=Textura[a2.name]
+    astro1=Astro(p1['massa'],(-3,0),p1['radius'],(0,0,0),t1)
+    astro2=Astro(p2['massa'],(3,0),p2['radius'],(0,0,0),t2)
+    astro3 = Astro(5.97e24, (-3, 0), 1.0, (0.2, 0.6, 1.0),t1 )  # Astro 1
+    astro4 = Astro(5.97e24, (3, 0), 1.0, (1.0, 0.6, 0.2),t2 )
+    astros=[astro3,astro4]
     # Crear malla inicial
     grid = generate_grid(size=20, spacing=0.8)
 
