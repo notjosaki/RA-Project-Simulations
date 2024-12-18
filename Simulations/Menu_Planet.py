@@ -176,11 +176,28 @@ def draw_text(text, position, size=20, color=(255, 255, 255)):
     glDrawPixels(text_surface.get_width(), text_surface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, text_data)
 
 
-def main_menu(planets):
+def main_menu():
     """Pantalla del menú principal con planetas giratorios."""
     rotation_angle = 0
     clock = pygame.time.Clock()
-
+    texture_earth = load_texture("Simulations/Imatges/earth.png")
+    texture_mars = load_texture("Simulations/Imatges/marth.jpg")
+    texture_jupiter = load_texture("Simulations/Imatges/jupiter.png")
+    texture_venus = load_texture("Simulations/Imatges/venus.png")
+    texture_saturn = load_texture("Simulations/Imatges/saturno.png")
+    texture_mercury = load_texture("Simulations/Imatges/mercurio.png")
+    texture_uranus = load_texture("Simulations/Imatges/urano.png")
+    texture_neptune = load_texture("Simulations/Imatges/neptuno.png")
+    planets = [
+        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
+        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
+        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
+        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
+        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
+        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
+        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
+        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
+    ]
     while True:
         mouse_pos = pygame.mouse.get_pos()
         mouse_clicked = False
@@ -214,77 +231,3 @@ def main_menu(planets):
         rotation_angle += 1  # Incrementar ángulo para rotación
         clock.tick(60)
 
-def main_menu(planets):
-    """Pantalla del menú principal con planetas giratorios."""
-    rotation_angle = 0
-    clock = pygame.time.Clock()
-
-    while True:
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_clicked = False
-        selected_planet = None
-
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                return None  # Salir del menú
-            if event.type == MOUSEBUTTONDOWN and event.button == 1:  # Botón izquierdo del ratón
-                mouse_clicked = True
-
-        # Comprobar colisiones con el ratón
-        for planet in planets:
-            planet.check_collision(*mouse_pos)
-            if planet.is_hovered and mouse_clicked:
-                selected_planet = planet
-                print(f"Planeta '{planet.name}' seleccionado.")
-                return selected_planet  # Devolver el planeta seleccionado
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        setup_camera_menu()
-
-        # Dibujar planetas girando
-        for planet in planets:
-            planet.draw(rotation_angle)
-            planet.draw_name()
-
-        # Mostrar texto del menú
-        draw_text("Selecciona qualsevol planeta", (150, 100), size=30, color=(255, 255, 255))
-        draw_text("ESC per sortir", (280, 60), size=25, color=(200, 200, 200))
-
-        pygame.display.flip()
-        rotation_angle += 1  # Incrementar ángulo para rotación
-        clock.tick(60)
-
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((700, 700), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('Curvatura del Espacio-Tiempo (Vista 3D)')
-
-    glClearColor(0.0, 0.0, 0.0, 1.0)
-    glEnable(GL_DEPTH_TEST)
-
-    # Cargar texturas
-    texture_earth = load_texture("Simulations/Imatges/earth.png")
-    texture_mars = load_texture("Simulations/Imatges/marth.jpg")
-    texture_jupiter = load_texture("Simulations/Imatges/jupiter.png")
-    texture_venus = load_texture("Simulations/Imatges/venus.png")
-    texture_saturn = load_texture("Simulations/Imatges/saturno.png")
-    texture_mercury = load_texture("Simulations/Imatges/mercurio.png")
-    texture_uranus = load_texture("Simulations/Imatges/urano.png")
-    texture_neptune = load_texture("Simulations/Imatges/neptuno.png")
-
-    # Crear planetas del menú
-    menu_planets = [
-        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
-        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
-        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
-        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
-        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
-        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
-        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
-        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
-    ]
-
-    # Mostrar menú principal para seleccionar un planeta
-    selected_planet = main_menu(menu_planets)
-   

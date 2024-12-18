@@ -3,16 +3,16 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
-
+from Menu_Planet import main_menu
 
 class Astro:
-    def __init__(self, massa, position=(0, 0), radius=0.5, color=(0.2, 0.6, 1.0), texture=None):
+    def __init__(self, massa, position=(0, 0), radius=0.5, color=(0.2, 0.6, 1.0), texture=None,name=None):
         self.massa = massa
         self.position = np.array(position, dtype=float)  # Posición en el plano
         self.radius = radius
         self.color = color
         self.texture = texture
-
+        self.name=name
     def draw(self):
         quadric = gluNewQuadric()
         glPushMatrix()
@@ -129,17 +129,10 @@ def main():
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
-
     # Cargar textura de Marte
-    texture_earth = load_texture("earth.png")
-    textura_marte = load_texture("textura_marte.png")
-
-    # Crear astros
-    astro1 = Astro(massa=5.97e24, position=(-3, 0), radius=6.38, color=(0.2, 0.6, 1.0), texture=texture_earth)  # Astro 1 sin textura
-    astro2 = Astro(massa=6.39e23, position=(3, 0), radius=3.39, color=(1.0, 0.6, 0.2), texture=textura_marte)  # Astro 2 con textura
-
-    astros = [astro1, astro2]
-
+    a1=main_menu()
+    a2=main_menu()
+    astros=[a1,a2]
     # Crear malla inicial
     grid = generate_grid(size=20, spacing=0.8)
 
