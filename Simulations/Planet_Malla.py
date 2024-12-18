@@ -3,7 +3,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
-from Simulations.Menu_Planet import main_menu
+from Menu_Planet import main_menu
 
 class Astro:
     def __init__(self, massa, position=(0, 0), radius=0.5, color=(0.2, 0.6, 1.0), texture=None,name=None):
@@ -129,31 +129,9 @@ def main():
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
-
-        # Cargar texturas
-    texture_earth = load_texture("Simulations/Imatges/earth.png")
-    texture_mars = load_texture("Simulations/Imatges/marth.jpg")
-    texture_jupiter = load_texture("Simulations/Imatges/jupiter.png")
-    texture_venus = load_texture("Simulations/Imatges/venus.png")
-    texture_saturn = load_texture("Simulations/Imatges/saturno.png")
-    texture_mercury = load_texture("Simulations/Imatges/mercurio.png")
-    texture_uranus = load_texture("Simulations/Imatges/urano.png")
-    texture_neptune = load_texture("Simulations/Imatges/neptuno.png")
-
-    # Crear planetas del menú
-    menu_planets = [
-        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
-        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
-        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
-        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
-        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
-        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
-        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
-        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
-    ]
     # Cargar textura de Marte
-    a1=main_menu(menu_planets)
-    a2=main_menu(menu_planets)
+    a1=main_menu()
+    a2=main_menu()
     astros=[a1,a2]
     # Crear malla inicial
     grid = generate_grid(size=20, spacing=0.8)
