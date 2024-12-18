@@ -285,6 +285,4 @@ def main():
         Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
     ]
 
-    # Mostrar menú principal para seleccionar un planeta
-    selected_planet = main_menu(menu_planets)
-   
+    
