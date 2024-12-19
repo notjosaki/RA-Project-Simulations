@@ -3,6 +3,8 @@ import sys
 import lhc_oval_creatiu
 import lhc_oval_simulacio
 from Planet_Malla import main
+import llegenda
+
 
 # Inicializar Pygame
 pygame.init()
@@ -56,16 +58,19 @@ def menu_principal():
         # Botones más anchos
         boton_creacio = pygame.Rect(200, 200, 400, 70)
         boton_simulacio = pygame.Rect(200, 300, 400, 70)
-        boton_salir = pygame.Rect(200, 400, 400, 70)
+        boton_llegenda = pygame.Rect(200, 400, 400, 70)
+        boton_salir = pygame.Rect(200, 500, 400, 70)
 
         # Detectar hover
         mouse_pos = pygame.mouse.get_pos()
         hover_creacio = boton_creacio.collidepoint(mouse_pos)
         hover_simulacio = boton_simulacio.collidepoint(mouse_pos)
+        hover_llegenda = boton_llegenda.collidepoint(mouse_pos)
         hover_salir = boton_salir.collidepoint(mouse_pos)
 
         dibujar_boton("Mode de Creació", boton_creacio, COLOR_BOTON, BLANCO, hover=hover_creacio)
         dibujar_boton("Mode de Simulació", boton_simulacio, COLOR_BOTON, BLANCO, hover=hover_simulacio)
+        dibujar_boton("Tipus de Partícules", boton_llegenda, COLOR_BOTON, BLANCO, hover=hover_llegenda)
         dibujar_boton("Sortir", boton_salir, COLOR_BOTON_SALIR, BLANCO, hover=hover_salir, hover_color=COLOR_BOTON_SALIR_HOVER)
 
         # Eventos
@@ -78,6 +83,8 @@ def menu_principal():
                     lhc_oval_creatiu.main()
                 if boton_simulacio.collidepoint(evento.pos):
                     lhc_oval_simulacio.main()
+                if boton_llegenda.collidepoint(evento.pos):
+                    llegenda.main()
                 if boton_salir.collidepoint(evento.pos):
                     pygame.quit()
                     sys.exit()
@@ -138,3 +145,5 @@ def mode_simulacio():
 
 # Iniciar el programa
 menu_principal()
+
+

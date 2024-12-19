@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import numpy as np
+import numpy as np   
 
 
 class Astro:
@@ -45,27 +45,6 @@ class Astro:
         if self.has_rings:
             self.draw_rings()
 
-    def draw_rings(self):
-        """Dibujar los anillos del planeta."""
-        glPushMatrix()
-        glTranslatef(self.position[0], self.position[1], self.radius)  # Mover al centro del planeta
-        glColor4f(0.8, 0.8, 0.8, 0.6)  # Color gris claro con transparencia
-
-        # Dibujar los anillos con GL_TRIANGLE_STRIP
-        num_segments = 100
-        inner_radius = self.radius * 1.5
-        outer_radius = self.radius * 2.5
-        glBegin(GL_TRIANGLE_STRIP)
-        for i in range(num_segments + 1):
-            angle = 2 * np.pi * i / num_segments
-            x = np.cos(angle)
-            y = np.sin(angle)
-            glVertex3f(inner_radius * x, inner_radius * y, 0)
-            glVertex3f(outer_radius * x, outer_radius * y, 0)
-        glEnd()
-
-        glPopMatrix()
-
     def draw_name(self):
         """Dibujar el nombre del planeta justo debajo de su posición."""
         x_offset = self.position[0] * 30 + 325  # Ajusta la posición horizontal del nombre
@@ -95,67 +74,6 @@ def load_texture(image_path):
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
     return texture
-
-def generate_grid(size=20, spacing=0.5):
-    """Generar una malla de puntos para representar el espacio-tiempo."""
-    grid = []
-    for x in np.linspace(-size, size, int(2 * size / spacing)):
-        for y in np.linspace(-size, size, int(2 * size / spacing)):
-            grid.append([x, y, 0])
-    return np.array(grid)
-
-
-def deform_grid(grid, astros, G=6.674e-11, c=3e8):
-    """Deformar la malla según la curvatura gravitacional de múltiples astros."""
-    deformed_grid = grid.copy()
-    for astro in astros:
-        for i, point in enumerate(deformed_grid):
-            x, y, z = point
-            dx, dy = astro.position[0] - x, astro.position[1] - y
-            distance = np.sqrt(dx**2 + dy**2)
-
-            if distance > astro.radius:  # Solo deformar puntos fuera del radio del planeta
-                schwarzschild_radius = 2 * G * astro.massa / c**2
-                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
-
-                # Aseguramos que la deformación siempre resta al eje Z
-                z_new = z - deformation * 1000  # Escalar para visualización
-                z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
-
-            deformed_grid[i] = [x, y, z]
-    return deformed_grid
-
-
-def draw_grid(grid, color=(1, 1, 1)):
-    """Dibujar la malla como una red de líneas."""
-    glColor3f(*color)
-    glBegin(GL_LINES)
-    size = int(np.sqrt(len(grid)))
-    for i in range(size):
-        for j in range(size - 1):
-            # Líneas en dirección X
-            glVertex3f(*grid[i * size + j])
-            glVertex3f(*grid[i * size + (j + 1)])
-            # Líneas en dirección Y
-            glVertex3f(*grid[j * size + i])
-            glVertex3f(*grid[(j + 1) * size + i])
-    glEnd()
-
-
-def setup_camera(zoom):
-    """Configurar la cámara para una vista 3D inclinada."""
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(45, 1, 0.1, 100)
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-
-    # Configuración de la cámara con una vista inclinada y zoom
-    gluLookAt(
-        0, -30 + zoom, 30 + zoom,  # Posición de la cámara (x, y, z)
-        0, 0, 0,                   # Hacia dónde mira la cámara (centro de la escena)
-        0, 0, 1                    # Vector "arriba" (orientación)
-    )
 
 def setup_camera_menu():
     """Configurar la cámara para el menú inicial."""
@@ -255,36 +173,31 @@ def main_menu(planets):
         rotation_angle += 1  # Incrementar ángulo para rotación
         clock.tick(60)
 
+
+
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((700, 700), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption('Curvatura del Espacio-Tiempo (Vista 3D)')
+    pygame.display.set_mode((800, 800), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption("Planetas Giratorios")
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
 
     # Cargar texturas
-    texture_earth = load_texture("earth.png")
-    texture_mars = load_texture("marth.jpg")
-    texture_jupiter = load_texture("jupiter.png")
-    texture_venus = load_texture("venus.png")
-    texture_saturn = load_texture("saturno.png")
-    texture_mercury = load_texture("mercurio.png")
-    texture_uranus = load_texture("urano.png")
-    texture_neptune = load_texture("neptuno.png")
+    texture_earth = load_texture("proton.png")
+    texture_mars = load_texture("neutron.png")
+    texture_jupiter = load_texture("boson.png")
+    texture_venus = load_texture("lepton.png")
 
-    # Crear planetas del menú
-    menu_planets = [
-        Astro(massa=1, position=(-6, 5), radius=1.5, texture=texture_earth, name="Saturn"),
-        Astro(massa=1, position=(-2, 5), radius=1.5, texture=texture_mars, name="Mercury"),
-        Astro(massa=1, position=(2, 5), radius=1.5, texture=texture_jupiter, name="Uranus"),
-        Astro(massa=1, position=(6, 5), radius=1.5, texture=texture_venus, name="Neptune"),
-        Astro(massa=1, position=(-6, -1), radius=1.5, texture=texture_saturn, name="Earth"),
-        Astro(massa=1, position=(-2, -1), radius=1.5, texture=texture_mercury, name="Mars"),
-        Astro(massa=1, position=(2, -1), radius=1.5, texture=texture_uranus, name="Jupiter"),
-        Astro(massa=1, position=(6, -1), radius=1.5, texture=texture_neptune, name="Venus"),
+    # Crear planetas
+    planets = [
+        Astro(1, (-4, 2), 1, texture=texture_earth, name="Proton"),
+        Astro(1, (0, 2), 1, texture=texture_mars, name="Neutron"),
+        Astro(1, (4, 2), 1, texture=texture_jupiter, name="Boson"),
+        Astro(1, (-4, -2), 1, texture=texture_venus, name="Lepton"),
     ]
 
-    # Mostrar menú principal para seleccionar un planeta
-    selected_planet = main_menu(menu_planets)
-   
+    main_menu(planets)
+
+if __name__ == "__main__":
+    main()
