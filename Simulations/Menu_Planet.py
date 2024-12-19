@@ -96,51 +96,6 @@ def load_texture(image_path):
 
     return texture
 
-def generate_grid(size=20, spacing=0.5):
-    """Generar una malla de puntos para representar el espacio-tiempo."""
-    grid = []
-    for x in np.linspace(-size, size, int(2 * size / spacing)):
-        for y in np.linspace(-size, size, int(2 * size / spacing)):
-            grid.append([x, y, 0])
-    return np.array(grid)
-
-
-def deform_grid(grid, astros, G=6.674e-11, c=3e8):
-    """Deformar la malla según la curvatura gravitacional de múltiples astros."""
-    deformed_grid = grid.copy()
-    for astro in astros:
-        for i, point in enumerate(deformed_grid):
-            x, y, z = point
-            dx, dy = astro.position[0] - x, astro.position[1] - y
-            distance = np.sqrt(dx**2 + dy**2)
-
-            if distance > astro.radius:  # Solo deformar puntos fuera del radio del planeta
-                schwarzschild_radius = 2 * G * astro.massa / c**2
-                deformation = schwarzschild_radius / (distance + 1e-6)  # Gravedad decrece con la distancia
-
-                # Aseguramos que la deformación siempre resta al eje Z
-                z_new = z - deformation * 1000  # Escalar para visualización
-                z = min(z, z_new)  # El nuevo Z nunca puede ser mayor que el actual
-
-            deformed_grid[i] = [x, y, z]
-    return deformed_grid
-
-
-def draw_grid(grid, color=(1, 1, 1)):
-    """Dibujar la malla como una red de líneas."""
-    glColor3f(*color)
-    glBegin(GL_LINES)
-    size = int(np.sqrt(len(grid)))
-    for i in range(size):
-        for j in range(size - 1):
-            # Líneas en dirección X
-            glVertex3f(*grid[i * size + j])
-            glVertex3f(*grid[i * size + (j + 1)])
-            # Líneas en dirección Y
-            glVertex3f(*grid[j * size + i])
-            glVertex3f(*grid[(j + 1) * size + i])
-    glEnd()
-
 
 def setup_camera(zoom):
     """Configurar la cámara para una vista 3D inclinada."""
